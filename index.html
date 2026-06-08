@@ -1,0 +1,2879 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MY APPS</title>
+
+<!-- PWA 필수 메타태그 -->
+<meta name="application-name" content="MY APPS"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="MY APPS"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#6C63FF"/>
+<meta name="description" content="나만의 앱 런처 — MY APPS"/>
+
+<!-- PWA manifest & 아이콘 (GitHub Pages용 외부 파일 참조) -->
+<link rel="manifest" href="manifest.json"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="icon-512.png"/>
+
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════
+   CSS 변수 & 기본 리셋
+═══════════════════════════════════════════ */
+:root {
+  --bg-primary   : #0a0a0f;
+  --bg-secondary : #12121a;
+  --bg-card      : #1a1a26;
+  --bg-glass     : rgba(255,255,255,0.04);
+  --accent       : #6C63FF;
+  --accent-2     : #FF6B9D;
+  --accent-3     : #00D2AA;
+  --text-primary : #F0EFFF;
+  --text-muted   : #8888aa;
+  --border       : rgba(255,255,255,0.08);
+  --shadow-glow  : 0 0 40px rgba(108,99,255,0.2);
+  --radius-lg    : 24px;
+  --radius-md    : 16px;
+  --radius-sm    : 10px;
+  --font-display : 'Syne', sans-serif;
+  --font-body    : 'DM Sans', sans-serif;
+  --transition   : 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+[data-theme="light"] {
+  --bg-primary   : #f0f0f8;
+  --bg-secondary : #e4e4f0;
+  --bg-card      : #ffffff;
+  --bg-glass     : rgba(0,0,0,0.04);
+  --text-primary : #1a1a2e;
+  --text-muted   : #666688;
+  --border       : rgba(0,0,0,0.08);
+  --shadow-glow  : 0 0 40px rgba(108,99,255,0.12);
+}
+
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+  transition: background var(--transition), color var(--transition);
+}
+
+/* ═══════════════════════════════════════════
+   배경 오로라 효과
+═══════════════════════════════════════════ */
+.aurora {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
+}
+.aurora-blob {
+  position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.12;
+  animation: aurora-drift 12s ease-in-out infinite alternate;
+}
+.aurora-blob:nth-child(1) {
+  width:600px;height:600px;top:-200px;left:-200px;
+  background:var(--accent); animation-delay:0s;
+}
+.aurora-blob:nth-child(2) {
+  width:400px;height:400px;top:40%;right:-150px;
+  background:var(--accent-2); animation-delay:-4s;
+}
+.aurora-blob:nth-child(3) {
+  width:350px;height:350px;bottom:-100px;left:30%;
+  background:var(--accent-3); animation-delay:-8s;
+}
+@keyframes aurora-drift {
+  from { transform: translate(0,0) scale(1); }
+  to   { transform: translate(30px,20px) scale(1.1); }
+}
+
+/* ═══════════════════════════════════════════
+   레이아웃
+═══════════════════════════════════════════ */
+.app-wrapper { position: relative; z-index: 1; min-height: 100vh; }
+
+/* ═══════════════════════════════════════════
+   네비게이션 바
+═══════════════════════════════════════════ */
+.nav {
+  position: sticky; top:0; z-index: 100;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 24px;
+  background: rgba(10,10,15,0.7);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+}
+[data-theme="light"] .nav { background: rgba(240,240,248,0.7); }
+.nav-brand {
+  font-family: var(--font-display);
+  font-weight: 800; font-size: 1.2rem;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.nav-actions { display: flex; gap: 8px; align-items: center; }
+.nav-btn {
+  background: var(--bg-glass); border: 1px solid var(--border);
+  color: var(--text-primary); border-radius: var(--radius-sm);
+  padding: 8px 14px; font-family: var(--font-body);
+  font-size: 0.8rem; cursor: pointer;
+  transition: all var(--transition);
+  display: flex; align-items: center; gap: 6px;
+}
+.nav-btn:hover { background: var(--accent); border-color: var(--accent); }
+.nav-btn.active { background: var(--accent); border-color: var(--accent); }
+
+/* 프로필 사진 */
+.profile-wrap {
+  position: relative; width: 38px; height: 38px;
+  border-radius: 50%; cursor: pointer;
+  border: 2px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  overflow: visible; transition: border-color var(--transition);
+  flex-shrink: 0;
+}
+.profile-wrap:hover { border-color: var(--accent); }
+.profile-wrap img {
+  width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+}
+#profileDefault {
+  font-size: 1.2rem; line-height: 1;
+  background: var(--bg-glass); border-radius: 50%;
+  width: 100%; height: 100%;
+  display: flex; align-items: center; justify-content: center;
+}
+.profile-edit-badge {
+  position: absolute; bottom: -2px; right: -2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: 0.55rem; display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--bg-primary);
+}
+
+/* ═══════════════════════════════════════════
+   탭 시스템
+═══════════════════════════════════════════ */
+.tab-bar {
+  display: flex; gap: 4px; padding: 12px 24px;
+  overflow-x: auto; scrollbar-width: none;
+  border-bottom: 1px solid var(--border);
+}
+.tab-bar::-webkit-scrollbar { display: none; }
+.tab-item {
+  flex-shrink: 0;
+  padding: 8px 18px; border-radius: var(--radius-sm);
+  font-size: 0.82rem; font-weight: 500; cursor: pointer;
+  transition: all var(--transition);
+  color: var(--text-muted);
+  background: transparent; border: none;
+  font-family: var(--font-body);
+  display: flex; align-items: center; gap: 6px;
+}
+.tab-item:hover { color: var(--text-primary); background: var(--bg-glass); }
+.tab-item.active {
+  color: var(--text-primary);
+  background: var(--accent);
+}
+.tab-content { display: none; padding: 24px; }
+.tab-content.active { display: block; }
+
+/* ═══════════════════════════════════════════
+   홈 - 런처 허브
+═══════════════════════════════════════════ */
+.launcher-header {
+  text-align: center; padding: 32px 0 40px;
+}
+.launcher-title {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 5vw, 3.5rem);
+  font-weight: 800; line-height: 1.1;
+  margin-bottom: 12px;
+}
+.launcher-title span {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2), var(--accent-3));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.launcher-sub { color: var(--text-muted); font-size: 0.95rem; }
+
+/* 원형 허브 */
+.hub-container {
+  position: relative; width: 320px; height: 320px;
+  margin: 0 auto 48px;
+}
+.hub-center {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: 90px; height: 90px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  font-size: 0.65rem; font-weight: 600; color: #fff;
+  box-shadow: 0 0 60px rgba(108,99,255,0.5);
+  z-index: 2; cursor: pointer; transition: transform var(--transition);
+}
+.hub-center:hover { transform: translate(-50%,-50%) scale(1.08); }
+.hub-center-icon { font-size: 1.8rem; }
+
+/* 허브 링 */
+.hub-ring {
+  position: absolute; inset: 0; border-radius: 50%;
+  border: 1px solid rgba(108,99,255,0.2);
+  animation: hub-rotate 30s linear infinite;
+}
+.hub-ring::before {
+  content:''; position:absolute; width:8px;height:8px;
+  border-radius:50%; background:var(--accent);
+  top:-4px; left:50%; transform:translateX(-50%);
+}
+@keyframes hub-rotate { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+/* 허브 아이콘 */
+.hub-icon {
+  position: absolute; width: 64px; height: 64px;
+  border-radius: 18px; display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  cursor: pointer; transition: all var(--transition);
+  border: 1px solid var(--border);
+  font-size: 0.55rem; font-weight: 600; gap: 3px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  transform-origin: center;
+  animation: hub-float 6s ease-in-out infinite;
+}
+.hub-icon:hover {
+  transform: scale(1.15) !important;
+  box-shadow: 0 8px 30px rgba(108,99,255,0.4);
+  z-index: 10;
+}
+.hub-icon-emoji { font-size: 1.6rem; }
+.hub-icon-label { font-family: var(--font-display); }
+
+/* 5개 앱 위치 (각도 배분) */
+.hub-icon:nth-child(2)  { top:0;    left:50%;  transform:translate(-50%,-50%)   rotate(0deg);   background:linear-gradient(135deg,#5865F2,#3c4a9e); animation-delay:0s; }
+.hub-icon:nth-child(3)  { top:30%;  right:-5%; transform:translate(50%,-50%)    rotate(0deg);   background:linear-gradient(135deg,#1a1a1a,#333);     animation-delay:-1s; }
+.hub-icon:nth-child(4)  { bottom:2%;right:18%; transform:translate(50%,50%)     rotate(0deg);   background:linear-gradient(135deg,#E1306C,#833AB4);   animation-delay:-2s; }
+.hub-icon:nth-child(5)  { bottom:2%;left:18%;  transform:translate(-50%,50%)    rotate(0deg);   background:linear-gradient(135deg,#0078FF,#0099FF);   animation-delay:-3s; }
+.hub-icon:nth-child(6)  { top:30%;  left:-5%;  transform:translate(-50%,-50%)   rotate(0deg);   background:linear-gradient(135deg,#2D8CFF,#1a5cd8);   animation-delay:-4s; }
+
+@keyframes hub-float {
+  0%,100% { filter: brightness(1); }
+  50%      { filter: brightness(1.15); }
+}
+
+/* 앱 카드 그리드 */
+.section-title {
+  font-family: var(--font-display);
+  font-size: 1.1rem; font-weight: 700;
+  margin-bottom: 16px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::before {
+  content:''; display:block; width:4px; height:18px;
+  background:linear-gradient(var(--accent),var(--accent-2));
+  border-radius:2px;
+}
+.app-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 16px; margin-bottom: 32px;
+}
+.app-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px 16px;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 10px;
+  cursor: pointer; transition: all var(--transition);
+  position: relative; overflow: hidden;
+}
+.app-card::before {
+  content:''; position:absolute; inset:0;
+  background: linear-gradient(135deg, transparent, rgba(108,99,255,0.05));
+  opacity:0; transition: opacity var(--transition);
+}
+.app-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: var(--shadow-glow); }
+.app-card:hover::before { opacity: 1; }
+.app-card-icon {
+  width: 52px; height: 52px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.6rem;
+}
+.app-card-name {
+  font-family: var(--font-display); font-size: 0.8rem; font-weight: 700;
+  text-align: center;
+}
+.app-card-badge {
+  position: absolute; top: 8px; right: 8px;
+  font-size: 0.6rem; padding: 2px 7px;
+  background: var(--accent); border-radius: 20px; color: #fff; font-weight: 600;
+}
+.app-card-usage {
+  font-size: 0.7rem; color: var(--text-muted);
+}
+
+/* 모드 전환 버튼 */
+.mode-bar {
+  display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 32px;
+}
+.mode-btn {
+  flex: 1; min-width: 140px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  cursor: pointer; transition: all var(--transition);
+  display: flex; flex-direction: column; gap: 6px;
+  color: var(--text-primary);
+}
+.mode-btn:hover { border-color: var(--accent); background: rgba(108,99,255,0.08); }
+.mode-btn.active { border-color: var(--accent); background: rgba(108,99,255,0.15); }
+.mode-btn-icon { font-size: 1.4rem; }
+.mode-btn-title { font-family: var(--font-display); font-weight: 700; font-size: 0.88rem; }
+.mode-btn-desc { font-size: 0.72rem; color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════
+   앱 실행 뷰
+═══════════════════════════════════════════ */
+.run-layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 20px; height: calc(100vh - 200px);
+  min-height: 500px;
+}
+@media (max-width: 768px) {
+  .run-layout { grid-template-columns: 1fr; height: auto; }
+}
+.iframe-area {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+  display: flex; flex-direction: column;
+  min-height: 400px;
+}
+.iframe-header {
+  padding: 14px 20px; background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 12px;
+}
+.iframe-dots { display: flex; gap: 6px; }
+.iframe-dot {
+  width: 12px; height: 12px; border-radius: 50%;
+}
+.iframe-dot:nth-child(1) { background: #FF5F57; }
+.iframe-dot:nth-child(2) { background: #FEBC2E; }
+.iframe-dot:nth-child(3) { background: #28C840; }
+.iframe-url {
+  flex: 1; background: var(--bg-glass); border: 1px solid var(--border);
+  border-radius: 8px; padding: 6px 12px; font-size: 0.78rem;
+  color: var(--text-muted); font-family: monospace;
+}
+.iframe-body {
+  flex: 1; display: flex; align-items: center; justify-content: center;
+  background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+  position: relative;
+}
+.iframe-placeholder {
+  text-align: center; padding: 40px;
+}
+.iframe-placeholder-icon { font-size: 4rem; margin-bottom: 16px; }
+.iframe-placeholder h3 {
+  font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 8px;
+}
+.iframe-placeholder p { color: var(--text-muted); font-size: 0.85rem; }
+.launch-btn {
+  margin-top: 20px; padding: 12px 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  border: none; border-radius: var(--radius-sm); color: #fff;
+  font-family: var(--font-display); font-weight: 700; font-size: 0.9rem;
+  cursor: pointer; transition: all var(--transition);
+}
+.launch-btn:hover { transform: scale(1.05); box-shadow: 0 8px 30px rgba(108,99,255,0.4); }
+
+/* 사이드 패널 */
+.run-side {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.timer-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 24px;
+  text-align: center;
+}
+.timer-display {
+  font-family: var(--font-display); font-size: 2.5rem; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 12px 0;
+}
+.timer-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; }
+.timer-controls { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+.btn-timer {
+  padding: 10px 20px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); cursor: pointer;
+  font-family: var(--font-body); font-weight: 500; font-size: 0.85rem;
+  transition: all var(--transition);
+}
+.btn-timer.start { background: var(--accent-3); border-color: var(--accent-3); color: #000; }
+.btn-timer.stop  { background: var(--accent-2); border-color: var(--accent-2); color: #fff; }
+.btn-timer.reset { background: var(--bg-glass); color: var(--text-muted); }
+.btn-timer:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.app-selector-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 20px;
+}
+.app-selector-card h4 {
+  font-family: var(--font-display); font-size: 0.85rem; font-weight: 700;
+  margin-bottom: 12px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.app-select-list { display: flex; flex-direction: column; gap: 8px; }
+.app-select-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: all var(--transition);
+  border: 1px solid transparent;
+}
+.app-select-item:hover { background: var(--bg-glass); border-color: var(--border); }
+.app-select-item.selected { border-color: var(--accent); background: rgba(108,99,255,0.1); }
+.app-select-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.1rem;
+}
+.app-select-name { font-size: 0.85rem; font-weight: 500; }
+
+/* ═══════════════════════════════════════════
+   멀티창 뷰
+═══════════════════════════════════════════ */
+.multi-layout {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; height: calc(100vh - 220px); min-height: 450px;
+}
+@media (max-width: 600px) { .multi-layout { grid-template-columns: 1fr; } }
+.multi-panel {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); overflow: hidden;
+  display: flex; flex-direction: column;
+  min-height: 300px;
+}
+.multi-panel-header {
+  padding: 12px 16px; background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: space-between;
+}
+.multi-panel-title { font-family: var(--font-display); font-weight: 700; font-size: 0.85rem; }
+.multi-app-selector {
+  background: var(--bg-glass); border: 1px solid var(--border);
+  color: var(--text-primary); border-radius: 8px;
+  padding: 4px 8px; font-size: 0.78rem;
+  font-family: var(--font-body);
+}
+.multi-panel-body {
+  flex:1; display:flex; align-items:center; justify-content:center;
+  background: linear-gradient(135deg, var(--bg-primary), var(--bg-secondary));
+}
+.multi-empty {
+  text-align: center; padding: 20px;
+}
+.multi-empty-icon { font-size: 2.5rem; margin-bottom: 8px; }
+.multi-empty p { font-size: 0.8rem; color: var(--text-muted); }
+.multi-launch {
+  margin-top: 12px; padding: 8px 20px;
+  background: var(--accent); border:none; border-radius:8px;
+  color:#fff; font-size:0.8rem; cursor:pointer; transition:all var(--transition);
+}
+.multi-launch:hover { opacity: 0.85; }
+
+/* ═══════════════════════════════════════════
+   집중 모드 뷰
+═══════════════════════════════════════════ */
+.focus-header {
+  background: linear-gradient(135deg, rgba(108,99,255,0.2), rgba(255,107,157,0.1));
+  border: 1px solid rgba(108,99,255,0.3);
+  border-radius: var(--radius-md); padding: 20px 24px;
+  margin-bottom: 20px;
+  display: flex; align-items: center; gap: 16px;
+}
+.focus-badge {
+  background: var(--accent); color: #fff; border-radius: 20px;
+  padding: 4px 14px; font-size: 0.72rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px; flex-shrink: 0;
+}
+.focus-desc { font-size: 0.88rem; color: var(--text-muted); }
+.focus-toggle {
+  margin-left: auto; flex-shrink: 0;
+  padding: 10px 24px; border-radius: var(--radius-sm);
+  font-family: var(--font-display); font-weight: 700; font-size: 0.85rem;
+  cursor: pointer; transition: all var(--transition); border: none;
+}
+.focus-toggle.on  { background: var(--accent-2); color: #fff; }
+.focus-toggle.off { background: var(--accent-3); color: #000; }
+
+.focus-app-area {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 40px;
+  min-height: 400px; display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
+}
+.focus-overlay {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; z-index: 10;
+  border-radius: var(--radius-lg);
+}
+.focus-overlay-icon { font-size: 3rem; margin-bottom: 12px; }
+.focus-overlay h3 { font-family: var(--font-display); font-size: 1.3rem; margin-bottom: 8px; }
+.focus-overlay p { color: var(--text-muted); font-size: 0.85rem; text-align: center; max-width: 280px; }
+.blocked-apps-list {
+  display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 16px;
+}
+.blocked-badge {
+  background: rgba(255,107,157,0.15); border: 1px solid rgba(255,107,157,0.3);
+  color: var(--accent-2); border-radius: 20px; padding: 4px 12px; font-size: 0.72rem;
+}
+.focus-discord-center { text-align: center; }
+.focus-discord-icon {
+  width: 100px; height: 100px; border-radius: 28px;
+  background: linear-gradient(135deg, #5865F2, #3c4a9e);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3rem; margin: 0 auto 16px;
+  box-shadow: 0 0 60px rgba(88,101,242,0.5);
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+@keyframes pulse-glow {
+  0%,100% { box-shadow: 0 0 40px rgba(88,101,242,0.4); }
+  50%      { box-shadow: 0 0 80px rgba(88,101,242,0.7); }
+}
+.focus-discord-center h2 { font-family: var(--font-display); font-size: 1.5rem; margin-bottom: 8px; }
+.focus-discord-center p { color: var(--text-muted); font-size: 0.88rem; }
+
+/* ═══════════════════════════════════════════
+   알림 관리
+═══════════════════════════════════════════ */
+.notif-list { display: flex; flex-direction: column; gap: 12px; }
+.notif-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 16px 20px;
+  display: flex; align-items: center; gap: 16px;
+  transition: all var(--transition);
+}
+.notif-item:hover { border-color: var(--accent); }
+.notif-icon {
+  width: 46px; height: 46px; border-radius: 13px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+}
+.notif-info { flex: 1; }
+.notif-name { font-family: var(--font-display); font-weight: 700; font-size: 0.92rem; }
+.notif-status { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+/* 토글 스위치 */
+.toggle {
+  position: relative; width: 48px; height: 26px; cursor: pointer;
+}
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+  position: absolute; inset: 0; background: var(--bg-glass);
+  border: 1px solid var(--border); border-radius: 13px;
+  transition: all var(--transition);
+}
+.toggle-slider::before {
+  content:''; position: absolute; width: 18px; height: 18px;
+  left: 3px; top: 3px; border-radius: 50%; background: var(--text-muted);
+  transition: all var(--transition);
+}
+.toggle input:checked + .toggle-slider { background: var(--accent); border-color: var(--accent); }
+.toggle input:checked + .toggle-slider::before { transform: translateX(22px); background: #fff; }
+
+/* ═══════════════════════════════════════════
+   통계/기록
+═══════════════════════════════════════════ */
+.stats-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(130px,1fr));
+  gap: 12px; margin-bottom: 24px;
+}
+.stat-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 20px 16px; text-align: center;
+  transition: all var(--transition);
+}
+.stat-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+.stat-card-num {
+  font-family: var(--font-display); font-size: 1.8rem; font-weight: 800;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.stat-card-label { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+
+/* 바 차트 */
+.chart-container {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 24px;
+  margin-bottom: 24px;
+}
+.chart-title {
+  font-family: var(--font-display); font-weight: 700; font-size: 0.9rem;
+  margin-bottom: 20px;
+}
+.chart-bar-row {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px;
+}
+.chart-bar-label { width: 80px; font-size: 0.78rem; text-align: right; flex-shrink: 0; }
+.chart-bar-wrap { flex: 1; background: var(--bg-glass); border-radius: 4px; overflow: hidden; height: 28px; }
+.chart-bar-fill {
+  height: 100%; border-radius: 4px; min-width: 4px;
+  display: flex; align-items: center; padding-left: 8px;
+  font-size: 0.7rem; font-weight: 600; color: #fff;
+  transition: width 1s cubic-bezier(0.4,0,0.2,1);
+}
+.chart-bar-fill.discord  { background: linear-gradient(90deg,#5865F2,#7289DA); }
+.chart-bar-fill.x        { background: linear-gradient(90deg,#333,#666); }
+.chart-bar-fill.instagram{ background: linear-gradient(90deg,#E1306C,#F77737); }
+.chart-bar-fill.messenger{ background: linear-gradient(90deg,#0078FF,#00C6FF); }
+.chart-bar-fill.zoom     { background: linear-gradient(90deg,#2D8CFF,#1a5cd8); }
+
+/* 세션 테이블 */
+.session-table-wrap { overflow-x: auto; }
+.session-table {
+  width: 100%; border-collapse: collapse;
+  font-size: 0.8rem;
+}
+.session-table th {
+  background: var(--bg-secondary); padding: 10px 14px;
+  text-align: left; font-family: var(--font-display);
+  font-weight: 700; font-size: 0.72rem;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+}
+.session-table td {
+  padding: 11px 14px; border-bottom: 1px solid var(--border);
+  color: var(--text-primary);
+}
+.session-table tr:hover td { background: var(--bg-glass); }
+.mode-pill {
+  padding: 3px 10px; border-radius: 12px; font-size: 0.68rem; font-weight: 600;
+}
+.mode-pill.일반    { background: rgba(108,99,255,0.15); color: var(--accent); }
+.mode-pill.집중모드 { background: rgba(255,107,157,0.15); color: var(--accent-2); }
+.mode-pill.멀티창  { background: rgba(0,210,170,0.15); color: var(--accent-3); }
+
+.ai-card {
+  background: linear-gradient(135deg, rgba(108,99,255,0.12), rgba(255,107,157,0.08));
+  border: 1px solid rgba(108,99,255,0.25);
+  border-radius: var(--radius-md); padding: 24px;
+  margin-bottom: 24px;
+}
+.ai-card-header {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 16px;
+}
+.ai-badge {
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff; border-radius: 8px; padding: 3px 10px;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;
+}
+.ai-card-title { font-family: var(--font-display); font-weight: 700; }
+.ai-text {
+  font-size: 0.85rem; line-height: 1.7; color: var(--text-primary);
+  white-space: pre-wrap;
+}
+.ai-loading { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 0.85rem; }
+.ai-dots { display: flex; gap: 4px; }
+.ai-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--accent);
+  animation: ai-bounce 1.2s ease-in-out infinite;
+}
+.ai-dot:nth-child(2) { animation-delay: 0.2s; }
+.ai-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes ai-bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-8px)} }
+
+/* ═══════════════════════════════════════════
+   테마 설정
+═══════════════════════════════════════════ */
+.settings-section { margin-bottom: 28px; }
+.settings-section-title {
+  font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-muted); margin-bottom: 12px; padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.theme-toggle-row {
+  display: flex; align-items: center; justify-content: space-between;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 16px 20px;
+}
+.theme-toggle-label { font-weight: 500; font-size: 0.88rem; }
+.color-palette {
+  display: flex; gap: 10px; flex-wrap: wrap; padding: 16px 0;
+}
+.color-swatch {
+  width: 40px; height: 40px; border-radius: 12px; cursor: pointer;
+  transition: all var(--transition); border: 2px solid transparent;
+  position: relative;
+}
+.color-swatch:hover { transform: scale(1.15); }
+.color-swatch.active::after {
+  content: '✓'; position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff; font-weight: 700; font-size: 1rem;
+}
+.icon-skin-grid {
+  display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+}
+.icon-skin {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px; text-align: center;
+  cursor: pointer; transition: all var(--transition);
+  font-size: 0.78rem;
+}
+.icon-skin:hover { border-color: var(--accent); }
+.icon-skin.active { border-color: var(--accent); background: rgba(108,99,255,0.1); }
+.icon-skin-preview { font-size: 1.5rem; margin-bottom: 4px; }
+
+/* ═══════════════════════════════════════════
+   공통 유틸
+═══════════════════════════════════════════ */
+.btn-primary {
+  padding: 12px 28px; border-radius: var(--radius-sm); border: none;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  color: #fff; font-family: var(--font-display); font-weight: 700;
+  font-size: 0.88rem; cursor: pointer; transition: all var(--transition);
+}
+.btn-primary:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: var(--shadow-glow); }
+.btn-ghost {
+  padding: 10px 22px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent; color: var(--text-muted);
+  font-family: var(--font-body); font-size: 0.85rem; cursor: pointer;
+  transition: all var(--transition);
+}
+.btn-ghost:hover { border-color: var(--accent); color: var(--text-primary); }
+.btn-danger {
+  padding: 10px 22px; border-radius: var(--radius-sm); border: none;
+  background: rgba(255,107,107,0.15); color: #ff6b6b;
+  font-family: var(--font-body); font-size: 0.85rem; cursor: pointer;
+  transition: all var(--transition);
+}
+.btn-danger:hover { background: rgba(255,107,107,0.3); }
+
+.toast {
+  position: fixed; bottom: 24px; right: 24px; z-index: 9999;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); padding: 14px 20px;
+  font-size: 0.85rem; display: flex; align-items: center; gap: 10px;
+  transform: translateY(80px); opacity: 0;
+  transition: all 0.4s cubic-bezier(0.4,0,0.2,1);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  max-width: 320px;
+}
+.toast.show { transform: translateY(0); opacity: 1; }
+.toast.success { border-color: var(--accent-3); }
+.toast.error   { border-color: var(--accent-2); }
+
+.empty-state {
+  text-align: center; padding: 60px 20px; color: var(--text-muted);
+}
+.empty-state-icon { font-size: 3rem; margin-bottom: 12px; }
+.empty-state p { font-size: 0.88rem; }
+
+/* 로딩 스피너 */
+.spinner {
+  display: inline-block; width: 20px; height: 20px;
+  border: 2px solid var(--border); border-top-color: var(--accent);
+  border-radius: 50%; animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ═══════════════════════════════════════════
+   앱 관리 탭
+═══════════════════════════════════════════ */
+
+/* 모달 오버레이 */
+.modal-backdrop {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+  opacity: 0; pointer-events: none;
+  transition: opacity var(--transition);
+}
+.modal-backdrop.open { opacity: 1; pointer-events: all; }
+
+.modal {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 32px;
+  width: 100%; max-width: 440px;
+  transform: translateY(24px) scale(0.97);
+  transition: transform var(--transition);
+  position: relative;
+}
+.modal-backdrop.open .modal { transform: translateY(0) scale(1); }
+.modal-close {
+  position: absolute; top: 16px; right: 16px;
+  background: var(--bg-glass); border: 1px solid var(--border);
+  color: var(--text-muted); border-radius: 8px;
+  width: 32px; height: 32px; cursor: pointer;
+  font-size: 1rem; display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+.modal-close:hover { background: var(--accent-2); color: #fff; border-color: var(--accent-2); }
+.modal-title {
+  font-family: var(--font-display); font-size: 1.15rem; font-weight: 800;
+  margin-bottom: 6px;
+}
+.modal-subtitle { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 24px; }
+
+/* 폼 필드 */
+.field { margin-bottom: 16px; }
+.field label {
+  display: block; font-size: 0.75rem; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px;
+  color: var(--text-muted); margin-bottom: 6px;
+}
+.field input, .field select {
+  width: 100%; background: var(--bg-secondary);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-primary); padding: 10px 14px;
+  font-size: 0.88rem; font-family: var(--font-body);
+  transition: border-color var(--transition); outline: none;
+}
+.field input:focus, .field select:focus { border-color: var(--accent); }
+.field input::placeholder { color: var(--text-muted); }
+
+/* 이모지 선택 그리드 */
+.emoji-grid {
+  display: grid; grid-template-columns: repeat(8, 1fr);
+  gap: 6px; margin-top: 6px;
+}
+.emoji-pick {
+  aspect-ratio: 1; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--bg-secondary); font-size: 1.1rem;
+  cursor: pointer; display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+}
+.emoji-pick:hover { border-color: var(--accent); background: rgba(108,99,255,0.1); transform: scale(1.1); }
+.emoji-pick.selected { border-color: var(--accent); background: rgba(108,99,255,0.2); }
+
+/* 색상 그라디언트 선택 */
+.gradient-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 8px; margin-top: 6px;
+}
+.gradient-pick {
+  height: 36px; border-radius: 8px; cursor: pointer;
+  border: 2px solid transparent; transition: all var(--transition);
+}
+.gradient-pick:hover { transform: scale(1.06); }
+.gradient-pick.selected { border-color: #fff; box-shadow: 0 0 12px rgba(255,255,255,0.3); }
+
+/* 앱 관리 카드 */
+.manage-app-list { display: flex; flex-direction: column; gap: 10px; }
+.manage-app-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 14px 18px;
+  display: flex; align-items: center; gap: 14px;
+  transition: all var(--transition);
+}
+.manage-app-item:hover { border-color: var(--accent); }
+.manage-app-item-icon {
+  width: 44px; height: 44px; border-radius: 12px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+}
+.manage-app-item-info { flex: 1; min-width: 0; }
+.manage-app-item-name { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; }
+.manage-app-item-url {
+  font-size: 0.72rem; color: var(--text-muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  max-width: 200px;
+}
+.manage-app-item-badge {
+  font-size: 0.62rem; padding: 2px 8px; border-radius: 12px;
+  background: rgba(108,99,255,0.15); color: var(--accent); font-weight: 600;
+  flex-shrink: 0;
+}
+.manage-app-actions { display: flex; gap: 6px; flex-shrink: 0; }
+.manage-btn {
+  padding: 6px 12px; border-radius: 8px; font-size: 0.75rem;
+  cursor: pointer; transition: all var(--transition); border: 1px solid var(--border);
+  background: var(--bg-glass); color: var(--text-muted);
+  font-family: var(--font-body);
+}
+.manage-btn:hover { border-color: var(--accent); color: var(--text-primary); }
+.manage-btn.del:hover { border-color: var(--accent-2); color: var(--accent-2); background: rgba(255,107,157,0.08); }
+
+/* 추가 버튼 (홈 그리드용) */
+.app-card-add {
+  background: var(--bg-glass); border: 2px dashed var(--border);
+  border-radius: var(--radius-md); padding: 20px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  cursor: pointer; transition: all var(--transition);
+  color: var(--text-muted);
+}
+.app-card-add:hover { border-color: var(--accent); color: var(--accent); transform: translateY(-4px); }
+.app-card-add-icon { font-size: 1.8rem; }
+.app-card-add-label { font-family: var(--font-display); font-size: 0.78rem; font-weight: 700; }
+
+/* 미리보기 */
+.preview-box {
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  padding: 14px; display: flex; align-items: center; gap: 12px;
+  margin-top: 6px; background: var(--bg-secondary);
+}
+.preview-icon {
+  width: 48px; height: 48px; border-radius: 14px;
+  display: flex; align-items: center; justify-content: center; font-size: 1.5rem;
+  flex-shrink: 0;
+}
+.preview-name { font-family: var(--font-display); font-weight: 700; font-size: 0.9rem; }
+.preview-url  { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
+
+/* ═══════════════════════════════════════════
+   로딩 스플래시
+═══════════════════════════════════════════ */
+#splash {
+  position: fixed; inset: 0; z-index: 9999;
+  background: #0a0a0f;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 24px;
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+#splash.hide { opacity: 0; visibility: hidden; }
+.splash-logo {
+  width: 100px; height: 100px; border-radius: 28px;
+  background: linear-gradient(135deg, #6C63FF, #FF6B9D);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 3rem;
+  animation: splash-pop 0.6s cubic-bezier(0.34,1.56,0.64,1) both;
+  box-shadow: 0 0 80px rgba(108,99,255,0.5);
+}
+@keyframes splash-pop {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1);   opacity: 1; }
+}
+.splash-title {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: 2.2rem; letter-spacing: -1px;
+  background: linear-gradient(135deg, #fff, #6C63FF, #FF6B9D);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: splash-pop 0.6s 0.2s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.splash-bar-wrap {
+  width: 160px; height: 3px; background: rgba(255,255,255,0.1);
+  border-radius: 2px; overflow: hidden;
+  animation: splash-pop 0.4s 0.3s ease both;
+}
+.splash-bar {
+  height: 100%; width: 0%;
+  background: linear-gradient(90deg, #6C63FF, #FF6B9D);
+  border-radius: 2px;
+  animation: splash-load 1.8s 0.4s ease forwards;
+}
+@keyframes splash-load { to { width: 100%; } }
+.splash-sub {
+  font-size: 0.78rem; color: rgba(255,255,255,0.3);
+  animation: splash-pop 0.4s 0.5s ease both;
+  letter-spacing: 2px; text-transform: uppercase;
+}
+
+/* ═══════════════════════════════════════════
+   드래그 정렬
+═══════════════════════════════════════════ */
+.app-card.dragging { opacity: 0.4; transform: scale(0.95); }
+.app-card.drag-over { border-color: var(--accent); transform: scale(1.03); }
+
+/* ═══════════════════════════════════════════
+   앱 폴더
+═══════════════════════════════════════════ */
+.folder-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 20px 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  cursor: pointer; transition: all var(--transition); position: relative;
+}
+.folder-card:hover { border-color: var(--accent); transform: translateY(-4px); box-shadow: var(--shadow-glow); }
+.folder-icon-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 3px; width: 52px; height: 52px;
+  background: var(--bg-secondary); border-radius: 14px;
+  padding: 6px; overflow: hidden;
+}
+.folder-icon-mini {
+  border-radius: 5px; display: flex; align-items: center;
+  justify-content: center; font-size: 0.75rem;
+}
+.folder-name { font-family: var(--font-display); font-weight: 700; font-size: 0.8rem; }
+.folder-count { font-size: 0.7rem; color: var(--text-muted); }
+
+/* 폴더 모달 앱 체크리스트 */
+.folder-app-check {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px; border-radius: var(--radius-sm);
+  cursor: pointer; transition: background var(--transition);
+}
+.folder-app-check:hover { background: var(--bg-glass); }
+.folder-app-check input { accent-color: var(--accent); width: 16px; height: 16px; }
+
+/* ═══════════════════════════════════════════
+   위젯
+═══════════════════════════════════════════ */
+.widget-row {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 20px;
+}
+@media (max-width: 480px) { .widget-row { grid-template-columns: 1fr; } }
+.widget-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 20px;
+  transition: all var(--transition);
+}
+.widget-card:hover { border-color: var(--accent); }
+.widget-label { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.widget-clock { font-family: var(--font-display); font-size: 2.2rem; font-weight: 800; letter-spacing: -1px; }
+.widget-date  { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
+.widget-weather-main { display: flex; align-items: center; gap: 12px; }
+.widget-weather-icon { font-size: 2.5rem; }
+.widget-temp { font-family: var(--font-display); font-size: 2rem; font-weight: 800; }
+.widget-weather-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+
+/* ═══════════════════════════════════════════
+   다국어 토글
+═══════════════════════════════════════════ */
+.lang-btn {
+  padding: 6px 14px; border-radius: 8px; font-size: 0.8rem;
+  border: 1px solid var(--border); background: var(--bg-glass);
+  color: var(--text-muted); cursor: pointer; transition: all var(--transition);
+}
+.lang-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+/* ═══════════════════════════════════════════
+   푸시알림 배너
+═══════════════════════════════════════════ */
+.push-banner {
+  background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(255,107,157,0.1));
+  border: 1px solid rgba(108,99,255,0.3);
+  border-radius: var(--radius-md); padding: 16px 20px;
+  display: flex; align-items: center; gap: 14px;
+  margin-bottom: 16px;
+}
+.push-banner-icon { font-size: 1.8rem; flex-shrink: 0; }
+.push-banner-text h4 { font-family: var(--font-display); font-size: 0.9rem; margin-bottom: 4px; }
+.push-banner-text p  { font-size: 0.78rem; color: var(--text-muted); }
+
+/* ═══════════════════════════════════════════
+   구글 로그인
+═══════════════════════════════════════════ */
+.google-login-btn {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 20px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--bg-card);
+  color: var(--text-primary); cursor: pointer;
+  font-family: var(--font-body); font-size: 0.9rem; font-weight: 500;
+  transition: all var(--transition); width: 100%;
+}
+.google-login-btn:hover { border-color: var(--accent); background: var(--bg-glass); }
+.google-icon { font-size: 1.2rem; }
+.user-profile-row {
+  display: flex; align-items: center; gap: 14px;
+  padding: 16px 20px; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--radius-md);
+}
+.user-avatar {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.3rem; flex-shrink: 0; overflow: hidden;
+}
+.user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+.user-name  { font-family: var(--font-display); font-weight: 700; font-size: 0.95rem; }
+.user-email { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+
+/* 폴더 모달 */
+.folder-modal-backdrop {
+  position: fixed; inset: 0; z-index: 600;
+  background: rgba(0,0,0,0.65); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  opacity: 0; pointer-events: none; transition: opacity var(--transition);
+}
+.folder-modal-backdrop.open { opacity: 1; pointer-events: all; }
+.folder-modal {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 28px;
+  width: 100%; max-width: 400px;
+  transform: translateY(20px); transition: transform var(--transition);
+}
+.folder-modal-backdrop.open .folder-modal { transform: translateY(0); }
+@media (max-width: 480px) {
+  .tab-bar { padding: 10px 12px; gap: 2px; }
+  .tab-item { padding: 7px 12px; font-size: 0.75rem; }
+  .tab-content { padding: 16px; }
+  .hub-container { width: 260px; height: 260px; }
+  .hub-center { width: 72px; height: 72px; }
+  .hub-icon { width: 52px; height: 52px; border-radius: 14px; }
+  .hub-icon-emoji { font-size: 1.3rem; }
+  .app-grid { grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
+}
+</style>
+</head>
+<body>
+<!-- ════ 로딩 스플래시 ════ -->
+<div id="splash">
+  <div class="splash-logo">◈</div>
+  <div class="splash-title">MY APPS</div>
+  <div class="splash-bar-wrap"><div class="splash-bar"></div></div>
+  <div class="splash-sub" id="splashSub">Loading...</div>
+</div>
+
+<div class="aurora">
+  <div class="aurora-blob"></div>
+  <div class="aurora-blob"></div>
+  <div class="aurora-blob"></div>
+</div>
+<div class="app-wrapper">
+  <!-- 네비게이션 -->
+  <nav class="nav">
+    <div class="nav-brand">◈ NEXUS</div>
+    <div class="nav-actions">
+      <button class="nav-btn" id="themeToggleNav" onclick="quickToggleTheme()">🌙 다크</button>
+      <button class="nav-btn" onclick="switchTab('stats')">📊 통계</button>
+
+      <!-- 프로필 사진 -->
+      <div class="profile-wrap" onclick="document.getElementById('profileInput').click()" title="프로필 사진 변경">
+        <img id="profileImg" src="" alt="프로필" style="display:none"/>
+        <div id="profileDefault">👤</div>
+        <div class="profile-edit-badge">✏</div>
+      </div>
+      <input type="file" id="profileInput" accept="image/*" style="display:none" onchange="uploadProfile(this)"/>
+    </div>
+  </nav>
+
+  <!-- 탭 바 -->
+  <div class="tab-bar">
+    <button class="tab-item active" onclick="switchTab('home')"   data-tab="home">🏠 <span class="i18n" data-key="home">홈</span></button>
+    <button class="tab-item"        onclick="switchTab('run')"    data-tab="run">▶ <span class="i18n" data-key="run">실행</span></button>
+    <button class="tab-item"        onclick="switchTab('multi')"  data-tab="multi">⊞ <span class="i18n" data-key="multi">멀티창</span></button>
+    <button class="tab-item"        onclick="switchTab('focus')"  data-tab="focus">🎯 <span class="i18n" data-key="focus">집중</span></button>
+    <button class="tab-item"        onclick="switchTab('widget')" data-tab="widget">🕐 <span class="i18n" data-key="widget">위젯</span></button>
+    <button class="tab-item"        onclick="switchTab('folder')" data-tab="folder">📂 <span class="i18n" data-key="folder">폴더</span></button>
+    <button class="tab-item"        onclick="switchTab('notif')"  data-tab="notif">🔔 <span class="i18n" data-key="notif">알림</span></button>
+    <button class="tab-item"        onclick="switchTab('stats')"  data-tab="stats">📊 <span class="i18n" data-key="stats">통계</span></button>
+    <button class="tab-item"        onclick="switchTab('theme')"  data-tab="theme">🎨 <span class="i18n" data-key="theme">테마</span></button>
+    <button class="tab-item"        onclick="switchTab('manage')" data-tab="manage">⚙ <span class="i18n" data-key="manage">앱관리</span></button>
+  </div>
+
+  <!-- ════════════════ 홈 탭 ════════════════ -->
+  <div class="tab-content active" id="tab-home">
+    <div class="launcher-header">
+      <div class="launcher-title"><span style="font-family:'Syne',sans-serif;font-weight:800;font-size:clamp(2.5rem,7vw,4.5rem);letter-spacing:-2px;background:linear-gradient(135deg,#fff 0%,var(--accent) 50%,var(--accent-2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">MY APPS</span></div>
+      <div class="launcher-sub">나만의 앱을 추가하고 한 화면에서 관리하세요</div>
+    </div>
+
+    <!-- 원형 허브 (동적 렌더링) -->
+    <div class="hub-container" id="hubContainer">
+      <div class="hub-ring"></div>
+      <div class="hub-center" onclick="switchTab('manage')">
+        <span class="hub-center-icon">◈</span>
+        <span style="font-size:0.6rem;font-family:var(--font-display);font-weight:700">NEXUS</span>
+      </div>
+      <!-- 허브 아이콘은 JS renderHub()로 동적 삽입 -->
+    </div>
+
+    <!-- 빈 상태 안내 (앱이 없을 때만 표시) -->
+    <div id="homeEmpty" style="display:none;text-align:center;padding:20px 24px 40px">
+      <div style="font-size:3.5rem;margin-bottom:16px">🚀</div>
+      <div style="font-family:var(--font-display);font-size:1.2rem;font-weight:700;margin-bottom:8px">
+        첫 번째 앱을 추가해보세요!
+      </div>
+      <div style="color:var(--text-muted);font-size:0.88rem;margin-bottom:24px;line-height:1.6">
+        Discord, Slack, Zoom 등 자주 쓰는 앱을<br>직접 등록하고 한 화면에서 관리하세요.
+      </div>
+      <button class="btn-primary" onclick="openAddModal();switchTab('manage')">＋ 첫 앱 추가하기</button>
+    </div>
+
+    <!-- 모드 전환 버튼 -->
+    <div class="section-title">모드 선택</div>
+    <div class="mode-bar">
+      <button class="mode-btn" onclick="switchTab('run')">
+        <span class="mode-btn-icon">▶</span>
+        <span class="mode-btn-title">앱 실행</span>
+        <span class="mode-btn-desc">단일 앱을 타이머와 함께</span>
+      </button>
+      <button class="mode-btn" onclick="switchTab('multi')">
+        <span class="mode-btn-icon">⊞</span>
+        <span class="mode-btn-title">멀티 창</span>
+        <span class="mode-btn-desc">두 앱을 동시에 나란히</span>
+      </button>
+      <button class="mode-btn" onclick="switchTab('focus')">
+        <span class="mode-btn-icon">🎯</span>
+        <span class="mode-btn-title">집중 모드</span>
+        <span class="mode-btn-desc">Discord만 허용, 나머지 차단</span>
+      </button>
+    </div>
+
+    <!-- 앱 카드 그리드 -->
+    <div class="section-title">앱 모음</div>
+    <div class="app-grid" id="homeAppGrid"></div>
+  </div>
+
+  <!-- ════════════════ 실행 탭 ════════════════ -->
+  <div class="tab-content" id="tab-run">
+    <div class="run-layout">
+      <div class="iframe-area">
+        <div class="iframe-header">
+          <div class="iframe-dots">
+            <div class="iframe-dot"></div><div class="iframe-dot"></div><div class="iframe-dot"></div>
+          </div>
+          <div class="iframe-url" id="runUrl">앱을 선택해주세요</div>
+        </div>
+        <div class="iframe-body" id="runBody">
+          <div class="iframe-placeholder">
+            <div class="iframe-placeholder-icon">◈</div>
+            <h3>앱을 선택하세요</h3>
+            <p>오른쪽 패널에서 실행할 앱을 선택하고<br>타이머를 시작하세요.</p>
+          </div>
+        </div>
+      </div>
+      <div class="run-side">
+        <!-- 타이머 -->
+        <div class="timer-card">
+          <div class="timer-label">사용 시간</div>
+          <div class="timer-display" id="timerDisplay">00:00:00</div>
+          <div style="font-size:0.75rem;color:var(--text-muted)" id="currentRunApp">선택된 앱 없음</div>
+          <div class="timer-controls">
+            <button class="btn-timer start" id="btnStart" onclick="startTimer()">▶ 시작</button>
+            <button class="btn-timer stop"  id="btnStop"  onclick="stopTimer()" disabled>■ 종료</button>
+            <button class="btn-timer reset" id="btnReset" onclick="resetTimer()">↺</button>
+          </div>
+        </div>
+        <!-- 앱 선택 -->
+        <div class="app-selector-card">
+          <h4>앱 선택</h4>
+          <div class="app-select-list" id="runAppList"></div>
+        </div>
+        <!-- 모드 선택 (소형) -->
+        <div class="app-selector-card">
+          <h4>실행 모드</h4>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.83rem">
+              <input type="radio" name="runMode" value="일반" checked> 일반 모드
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:0.83rem">
+              <input type="radio" name="runMode" value="집중모드"> 집중 모드
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 멀티창 탭 ════════════════ -->
+  <div class="tab-content" id="tab-multi">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div class="section-title" style="margin-bottom:0">멀티 창 모드</div>
+      <button class="btn-primary" onclick="startMultiSession()">▶ 세션 시작</button>
+    </div>
+    <div class="multi-layout">
+      <div class="multi-panel">
+        <div class="multi-panel-header">
+          <span class="multi-panel-title">왼쪽 창</span>
+          <select class="multi-app-selector" id="multiLeft" onchange="updateMultiPanel('left')">
+            <option value="">앱 선택...</option>
+            <option>Discord</option><option>X</option>
+            <option>Instagram</option><option>Messenger</option><option>Zoom</option>
+          </select>
+        </div>
+        <div class="multi-panel-body" id="multiLeftBody">
+          <div class="multi-empty">
+            <div class="multi-empty-icon">⊞</div>
+            <p>앱을 선택하세요</p>
+          </div>
+        </div>
+      </div>
+      <div class="multi-panel">
+        <div class="multi-panel-header">
+          <span class="multi-panel-title">오른쪽 창</span>
+          <select class="multi-app-selector" id="multiRight" onchange="updateMultiPanel('right')">
+            <option value="">앱 선택...</option>
+            <option>Discord</option><option>X</option>
+            <option>Instagram</option><option>Messenger</option><option>Zoom</option>
+          </select>
+        </div>
+        <div class="multi-panel-body" id="multiRightBody">
+          <div class="multi-empty">
+            <div class="multi-empty-icon">⊞</div>
+            <p>앱을 선택하세요</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 집중 모드 탭 ════════════════ -->
+  <div class="tab-content" id="tab-focus">
+    <div class="focus-header">
+      <span class="focus-badge">집중 모드</span>
+      <div>
+        <div style="font-weight:600;font-size:0.9rem;margin-bottom:4px">Discord 음성 채팅만 허용</div>
+        <div class="focus-desc">나머지 앱 알림은 모두 차단됩니다.</div>
+      </div>
+      <button class="focus-toggle off" id="focusToggleBtn" onclick="toggleFocusMode()">활성화</button>
+    </div>
+    <div class="focus-app-area" id="focusArea">
+      <div class="focus-overlay" id="focusOverlay">
+        <div class="focus-overlay-icon">🔒</div>
+        <h3>집중 모드 비활성화됨</h3>
+        <p>위의 버튼을 눌러 집중 모드를 활성화하세요.</p>
+      </div>
+      <div class="focus-discord-center">
+        <div class="focus-discord-icon">💬</div>
+        <h2>Discord</h2>
+        <p style="color:var(--text-muted);font-size:0.85rem">음성 채팅에 집중하세요</p>
+        <button class="launch-btn" onclick="showToast('Discord 웹 앱으로 연결됩니다.','success')">
+          Discord 열기
+        </button>
+      </div>
+    </div>
+    <div style="margin-top:16px">
+      <div class="section-title">차단된 앱</div>
+      <div class="blocked-apps-list" id="blockedAppsList">
+        <span class="blocked-badge">📸 Instagram</span>
+        <span class="blocked-badge">𝕏 X</span>
+        <span class="blocked-badge">💙 Messenger</span>
+        <span class="blocked-badge">📹 Zoom</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 알림 관리 탭 ════════════════ -->
+  <div class="tab-content" id="tab-notif">
+    <div class="section-title">알림 관리</div>
+    <div class="notif-list" id="notifList"></div>
+  </div>
+
+  <!-- ════════════════ 통계 탭 ════════════════ -->
+  <div class="tab-content" id="tab-stats">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <div class="section-title" style="margin-bottom:0">사용 통계</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-ghost" onclick="loadStats()">🔄 새로고침</button>
+        <button class="btn-danger" onclick="clearStats()">🗑 초기화</button>
+      </div>
+    </div>
+
+    <!-- AI 추천 -->
+    <div class="ai-card">
+      <div class="ai-card-header">
+        <span class="ai-badge">✨ Gemini AI</span>
+        <span class="ai-card-title">사용 패턴 분석</span>
+        <button class="btn-ghost" style="margin-left:auto;padding:6px 14px;font-size:0.75rem" onclick="getAITip()">분석하기</button>
+      </div>
+      <div id="aiContent">
+        <div style="color:var(--text-muted);font-size:0.85rem">분석하기 버튼을 눌러 AI 조언을 받아보세요.</div>
+      </div>
+    </div>
+
+    <!-- 요약 카드 -->
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><div class="stat-card-num">-</div><div class="stat-card-label">총 세션</div></div>
+      <div class="stat-card"><div class="stat-card-num">-</div><div class="stat-card-label">총 사용 시간(분)</div></div>
+      <div class="stat-card"><div class="stat-card-num">-</div><div class="stat-card-label">가장 많이 쓴 앱</div></div>
+      <div class="stat-card"><div class="stat-card-num">-</div><div class="stat-card-label">오늘 세션</div></div>
+    </div>
+
+    <!-- 바 차트 -->
+    <div class="chart-container">
+      <div class="chart-title">앱별 총 사용 시간</div>
+      <div id="barChart">
+        <div class="empty-state"><div class="empty-state-icon">📊</div><p>아직 데이터가 없습니다</p></div>
+      </div>
+    </div>
+
+    <!-- 세션 로그 -->
+    <div class="section-title">최근 세션 기록</div>
+    <div class="session-table-wrap">
+      <table class="session-table">
+        <thead>
+          <tr>
+            <th>앱</th><th>시작</th><th>사용시간</th><th>모드</th><th>알림</th>
+          </tr>
+        </thead>
+        <tbody id="sessionTbody">
+          <tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px">데이터 없음</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════════════════ 테마 탭 ════════════════ -->
+  <div class="tab-content" id="tab-theme">
+    <div class="section-title">테마 설정</div>
+
+    <!-- 다크/라이트 -->
+    <div class="settings-section">
+      <div class="settings-section-title">화면 모드</div>
+      <div class="theme-toggle-row">
+        <div>
+          <div class="theme-toggle-label">다크 모드</div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px">어두운 배경으로 전환</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" id="themeCb" checked onchange="applyTheme()"/>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 컬러 팔레트 -->
+    <div class="settings-section">
+      <div class="settings-section-title">강조색 선택</div>
+      <div class="color-palette" id="colorPalette"></div>
+    </div>
+
+    <!-- 아이콘 스킨 -->
+    <div class="settings-section">
+      <div class="settings-section-title">아이콘 스킨</div>
+      <div class="icon-skin-grid" id="iconSkinGrid"></div>
+    </div>
+
+    <!-- 구글 로그인 -->
+    <div class="settings-section">
+      <div class="settings-section-title">👤 <span class="i18n" data-key="account">계정</span></div>
+      <div id="loginSection">
+        <button class="google-login-btn" onclick="googleLogin()">
+          <span class="google-icon">🔵</span>
+          <span class="i18n" data-key="loginGoogle">Google 계정으로 로그인</span>
+        </button>
+        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:8px" class="i18n" data-key="loginDesc">
+          로그인하면 설정이 기기간 동기화됩니다 (시뮬레이션)
+        </div>
+      </div>
+      <div id="userSection" style="display:none">
+        <div class="user-profile-row">
+          <div class="user-avatar" id="userAvatar">👤</div>
+          <div>
+            <div class="user-name"  id="userName">-</div>
+            <div class="user-email" id="userEmail">-</div>
+          </div>
+          <button class="btn-ghost" style="margin-left:auto;padding:7px 14px;font-size:0.8rem"
+                  onclick="googleLogout()">
+            <span class="i18n" data-key="logout">로그아웃</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 앱 아이콘 (PWA 로고) -->
+    <div class="settings-section">
+      <div class="settings-section-title">앱 아이콘 (바탕화면 로고)</div>
+      <div style="display:flex;align-items:center;gap:20px;padding:16px;
+        background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md)">
+        <!-- 현재 아이콘 미리보기 -->
+        <div style="position:relative;flex-shrink:0">
+          <div id="pwaIconPreview" style="width:72px;height:72px;border-radius:18px;
+            background:linear-gradient(135deg,#6C63FF,#FF6B9D);
+            display:flex;align-items:center;justify-content:center;
+            font-size:2.2rem;overflow:hidden;border:2px solid var(--border)">◈</div>
+        </div>
+        <div style="flex:1">
+          <div style="font-family:var(--font-display);font-weight:700;font-size:0.9rem;margin-bottom:4px">
+            Chrome 설치 아이콘
+          </div>
+          <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:12px;line-height:1.5">
+            바탕화면에 설치될 때 보이는 로고입니다.<br>
+            이미지 업로드 후 Chrome에서 재설치하면 적용됩니다.
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-primary" style="padding:8px 18px;font-size:0.82rem"
+              onclick="document.getElementById('pwaIconInput').click()">
+              🖼 이미지 업로드
+            </button>
+            <button class="btn-ghost" style="padding:8px 18px;font-size:0.82rem"
+              onclick="resetPwaIcon()">↺ 기본으로</button>
+          </div>
+        </div>
+      </div>
+      <input type="file" id="pwaIconInput" accept="image/*" style="display:none"
+             onchange="uploadPwaIcon(this)"/>
+      <div id="pwaIconHint" style="margin-top:8px;font-size:0.75rem;color:var(--text-muted)">
+        💡 권장: 정사각형 이미지 (512×512px 이상), PNG/JPG
+      </div>
+    </div>
+
+    <button class="btn-primary" onclick="saveThemeSettings()">💾 설정 저장</button>
+  </div>
+</div><!-- /app-wrapper -->
+
+  <!-- ════════════════ 위젯 탭 ════════════════ -->
+  <div class="tab-content" id="tab-widget">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+      <div class="section-title" style="margin-bottom:0">🕐 <span class="i18n" data-key="widgetTitle">위젯</span></div>
+      <div style="display:flex;gap:6px">
+        <button class="lang-btn active" onclick="setLang('ko',this)">🇰🇷 한국어</button>
+        <button class="lang-btn"        onclick="setLang('en',this)">🇺🇸 English</button>
+        <button class="lang-btn"        onclick="setLang('ja',this)">🇯🇵 日本語</button>
+      </div>
+    </div>
+    <div class="widget-row">
+      <!-- 시계 위젯 -->
+      <div class="widget-card">
+        <div class="widget-label">⏰ <span class="i18n" data-key="clock">시계</span></div>
+        <div class="widget-clock" id="widgetClock">00:00:00</div>
+        <div class="widget-date"  id="widgetDate">-</div>
+      </div>
+      <!-- 날씨 위젯 -->
+      <div class="widget-card">
+        <div class="widget-label">🌤 <span class="i18n" data-key="weather">날씨</span></div>
+        <div class="widget-weather-main">
+          <div class="widget-weather-icon" id="weatherIcon">⏳</div>
+          <div>
+            <div class="widget-temp" id="weatherTemp">--°</div>
+            <div class="widget-weather-desc" id="weatherDesc"><span class="i18n" data-key="locating">위치 확인 중...</span></div>
+          </div>
+        </div>
+        <div style="font-size:0.72rem;color:var(--text-muted);margin-top:8px" id="weatherCity"></div>
+      </div>
+    </div>
+    <!-- 푸시 알림 배너 -->
+    <div class="push-banner">
+      <div class="push-banner-icon">🔔</div>
+      <div class="push-banner-text">
+        <h4><span class="i18n" data-key="pushTitle">푸시 알림</span></h4>
+        <p><span class="i18n" data-key="pushDesc">앱 사용 리마인더를 받아보세요</span></p>
+      </div>
+      <button class="btn-primary" style="margin-left:auto;padding:8px 18px;font-size:0.8rem;flex-shrink:0"
+              onclick="requestPushPermission()">
+        <span class="i18n" data-key="enable">활성화</span>
+      </button>
+    </div>
+    <div id="pushStatus" style="font-size:0.8rem;color:var(--text-muted);margin-top:8px"></div>
+  </div>
+
+  <!-- ════════════════ 폴더 탭 ════════════════ -->
+  <div class="tab-content" id="tab-folder">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div class="section-title" style="margin-bottom:0">📂 <span class="i18n" data-key="folder">폴더</span></div>
+      <button class="btn-primary" onclick="openFolderModal()">＋ <span class="i18n" data-key="newFolder">새 폴더</span></button>
+    </div>
+    <div class="app-grid" id="folderGrid">
+      <div class="empty-state"><div class="empty-state-icon">📂</div><p class="i18n" data-key="noFolder">폴더가 없습니다</p></div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 앱 관리 탭 ════════════════ -->
+  <div class="tab-content" id="tab-manage">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+      <div class="section-title" style="margin-bottom:0">앱 관리</div>
+      <button class="btn-primary" onclick="openAddModal()">＋ 새 앱 추가</button>
+    </div>
+
+    <!-- 기본 앱 안내 -->
+    <div style="background:rgba(108,99,255,0.08);border:1px solid rgba(108,99,255,0.2);
+      border-radius:var(--radius-sm);padding:12px 16px;font-size:0.8rem;
+      color:var(--text-muted);margin-bottom:20px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:1.1rem">💡</span>
+      기본 앱(Discord·X·Instagram·Messenger·Zoom)은 삭제할 수 없습니다.
+      추가한 앱은 편집·삭제 가능합니다.
+    </div>
+
+    <div class="manage-app-list" id="manageAppList"></div>
+  </div>
+
+  <!-- ════════════════ 앱 추가/편집 모달 ════════════════ -->
+  <div class="modal-backdrop" id="appModal">
+    <div class="modal">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title" id="modalTitle">새 앱 추가</div>
+      <div class="modal-subtitle" id="modalSubtitle">자주 쓰는 소통 앱을 런처에 등록하세요.</div>
+
+      <!-- 미리보기 -->
+      <div class="preview-box" id="previewBox">
+        <div class="preview-icon" id="previewIcon" style="background:linear-gradient(135deg,#6C63FF,#FF6B9D)">🌐</div>
+        <div>
+          <div class="preview-name" id="previewName">앱 이름</div>
+          <div class="preview-url"  id="previewUrl">https://example.com</div>
+        </div>
+      </div>
+
+      <div style="height:20px"></div>
+
+      <!-- 앱 이름 -->
+      <div class="field">
+        <label>앱 이름 *</label>
+        <input type="text" id="fieldName" placeholder="예: Slack" maxlength="20"
+               oninput="updatePreview()"/>
+      </div>
+
+      <!-- URL -->
+      <div class="field">
+        <label>URL *</label>
+        <input type="text" id="fieldUrl" placeholder="https://slack.com"
+               oninput="updatePreview(); checkDeepLink()"/>
+        <div id="deepLinkHint" style="margin-top:6px;font-size:0.73rem;color:var(--text-muted)"></div>
+      </div>
+
+      <!-- 이모지 선택 -->
+      <div class="field">
+        <label>아이콘 이모지</label>
+        <div class="emoji-grid" id="emojiGrid"></div>
+      </div>
+
+      <!-- 그라디언트 색상 -->
+      <div class="field">
+        <label>카드 색상</label>
+        <div class="gradient-grid" id="gradientGrid"></div>
+      </div>
+
+      <!-- 저장 버튼 -->
+      <div style="display:flex;gap:10px;margin-top:24px">
+        <button class="btn-ghost" style="flex:1" onclick="closeModal()">취소</button>
+        <button class="btn-primary" style="flex:2" onclick="saveApp()">✓ 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════ 폴더 생성 모달 ════════════════ -->
+  <div class="folder-modal-backdrop" id="folderModal">
+    <div class="folder-modal">
+      <div style="font-family:var(--font-display);font-size:1.1rem;font-weight:800;margin-bottom:4px">
+        📂 <span class="i18n" data-key="newFolder">새 폴더</span>
+      </div>
+      <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:20px" class="i18n" data-key="folderDesc">
+        앱을 묶어서 관리하세요
+      </div>
+      <div class="field">
+        <label class="i18n" data-key="folderName">폴더 이름</label>
+        <input type="text" id="folderNameInput" placeholder="예: 소셜, 업무, 게임" maxlength="15"/>
+      </div>
+      <div class="field">
+        <label class="i18n" data-key="selectApps">앱 선택</label>
+        <div id="folderAppChecklist" style="display:flex;flex-direction:column;gap:4px;max-height:200px;overflow-y:auto"></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px">
+        <button class="btn-ghost" style="flex:1" onclick="closeFolderModal()">
+          <span class="i18n" data-key="cancel">취소</span>
+        </button>
+        <button class="btn-primary" style="flex:2" onclick="saveFolder()">
+          ✓ <span class="i18n" data-key="save">저장</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+<!-- 토스트 -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════
+// 앱 데이터
+// ═══════════════════════════════════════
+// 처음엔 빈 배열 — 사용자가 직접 추가해서 키움
+let APPS = [];
+
+// 앱별 딥링크(프로토콜) 매핑 — 실제 설치된 앱을 우선 실행
+// 딥링크 실패 시 웹 URL로 자동 폴백
+const DEEP_LINKS = {
+  'discord'   : 'discord://',
+  'zoom'      : 'zoommtg://zoom.us/start',
+  'slack'     : 'slack://',
+  'telegram'  : 'tg://',
+  'whatsapp'  : 'whatsapp://',
+  'notion'    : 'notion://',
+  'figma'     : 'figma://',
+  'vscode'    : 'vscode://',
+  'spotify'   : 'spotify://',
+  'obsidian'  : 'obsidian://',
+  'linear'    : 'linear://',
+  'github'    : 'x-github://',
+};
+
+const COLORS = ['#6C63FF','#FF6B9D','#00D2AA','#FF8C42','#4ECDC4','#A78BFA','#F59E0B','#EF4444'];
+const ICON_SKINS = [
+  { name:'기본',   icons:['💬','𝕏','📸','💙','📹'] },
+  { name:'클래식', icons:['🗨','✖','🌸','📨','🎥'] },
+  { name:'미니멀', icons:['◉','✕','◎','◍','▶'] },
+];
+
+const COLORS_NAMES = ['보라빛','핑크','민트','오렌지','청록','라벤더','호박','레드'];
+
+let timerInterval = null;
+let timerSeconds  = 0;
+let timerRunning  = false;
+let currentApp    = null;
+let sessionStartTime = null;
+let currentMode   = '일반';
+let focusActive   = false;
+let settings      = { theme:'dark', accentColor:'#6C63FF', notifications:{}, skinIndex:0 };
+let statsData     = { data:[], sessions:[] };
+
+// ═══════════════════════════════════════
+// 초기화
+// ═══════════════════════════════════════
+window.onload = () => {
+  hideSplash();
+  applyLang();
+  startClock();
+  loadWeather();
+  loadProfileImg();
+  loadPwaIconPreview();
+  loadSettings();
+  renderHomeGrid();
+  renderRunAppList();
+  renderNotifList();
+  renderManageList();
+  renderFolderGrid();
+  renderColorPalette();
+  renderIconSkinGrid();
+  applyUserUI();
+  loadStats();
+  // 드래그 활성화는 그리드 렌더 후
+  setTimeout(enableDrag, 300);
+};
+
+// ═══════════════════════════════════════
+// 탭 전환
+// ═══════════════════════════════════════
+function switchTab(id) {
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  const btn = document.querySelector(`[data-tab="${id}"]`);
+  if (btn) btn.classList.add('active');
+  if (id === 'stats') loadStats();
+}
+
+// ═══════════════════════════════════════
+// 허브 동적 렌더링 (앱 수에 따라 배치)
+// ═══════════════════════════════════════
+function renderHub() {
+  const container = document.getElementById('hubContainer');
+  // 기존 동적 아이콘 제거 (ring·center는 유지)
+  container.querySelectorAll('.hub-icon').forEach(el => el.remove());
+
+  const count = APPS.length;
+  if (count === 0) return;
+
+  // 최대 8개까지 허브에 표시
+  const displayed = APPS.slice(0, 8);
+  const radius    = 120; // hub-container 절반(160) - 아이콘 절반(32) - 여백
+  const cx = 160; const cy = 160;
+
+  displayed.forEach((app, i) => {
+    const angle = (2 * Math.PI / displayed.length) * i - Math.PI / 2;
+    const x = cx + radius * Math.cos(angle);
+    const y = cy + radius * Math.sin(angle);
+    const shortName = app.name.length > 5 ? app.name.slice(0,5)+'…' : app.name;
+
+    const el = document.createElement('div');
+    el.className = 'hub-icon';
+    el.style.cssText = `
+      left:${x}px; top:${y}px;
+      transform:translate(-50%,-50%);
+      background:${app.color};
+      animation-delay:${-i * 0.8}s;
+    `;
+    el.innerHTML = `
+      <span class="hub-icon-emoji">${app.emoji}</span>
+      <span class="hub-icon-label">${shortName}</span>
+    `;
+    el.onclick = () => launchAppDirect(app.name);
+    container.appendChild(el);
+  });
+}
+
+// ═══════════════════════════════════════
+// 홈 그리드 렌더링
+// ═══════════════════════════════════════
+function renderHomeGrid() {
+  const grid  = document.getElementById('homeAppGrid');
+  const empty = document.getElementById('homeEmpty');
+
+  renderHub();
+
+  if (APPS.length === 0) {
+    empty.style.display = 'block';
+    grid.innerHTML = '';
+    // 추가 카드만
+    grid.innerHTML = `
+      <div class="app-card-add" onclick="openAddModal();switchTab('manage')">
+        <div class="app-card-add-icon">＋</div>
+        <div class="app-card-add-label">첫 앱 추가</div>
+      </div>
+    `;
+  } else {
+    empty.style.display = 'none';
+    grid.innerHTML = APPS.map(app => `
+      <div class="app-card" onclick="launchAppDirect('${escapeHtml(app.name)}')">
+        <div class="app-card-icon" style="background:${app.color}">${app.emoji}</div>
+        <div class="app-card-name">${escapeHtml(app.name)}</div>
+        <div class="app-card-usage" id="homeUsage-${escapeHtml(app.name)}">기록 없음</div>
+      </div>
+    `).join('') + `
+      <div class="app-card-add" onclick="openAddModal();switchTab('manage')">
+        <div class="app-card-add-icon">＋</div>
+        <div class="app-card-add-label">앱 추가</div>
+      </div>
+    `;
+  }
+  updateHomeUsage();
+}
+
+function updateHomeUsage() {
+  APPS.forEach(app => {
+    const el = document.getElementById('homeUsage-'+app.name);
+    if (!el) return;
+    const stat = statsData.data.find(d => d.appName === app.name);
+    el.textContent = stat ? `${stat.totalMinutes}분 사용` : '기록 없음';
+  });
+}
+
+// ═══════════════════════════════════════
+// 앱 직접 실행 — 딥링크(실제 앱) 우선, 실패 시 웹 폴백
+// ═══════════════════════════════════════
+function launchAppDirect(appName) {
+  currentApp = APPS.find(a => a.name === appName);
+  if (!currentApp) return;
+
+  // 타이머·실행 탭 전환
+  switchTab('run');
+  selectRunApp(appName);
+  startTimer();
+
+  // 실제 앱 실행 시도
+  openAppNative(currentApp);
+}
+
+function openAppNative(app) {
+  const key      = app.name.toLowerCase().replace(/[^a-z0-9]/g,'');
+  const deepLink = DEEP_LINKS[key];
+
+  if (deepLink) {
+    // 딥링크로 실제 앱 실행 시도
+    // → 앱이 설치돼 있으면 바로 열림, 없으면 폴백
+    const startTime = Date.now();
+    window.location.href = deepLink;
+
+    // 1.5초 후에도 페이지가 그대로면 앱 미설치 → 웹으로 폴백
+    setTimeout(() => {
+      if (Date.now() - startTime < 2000) {
+        // 페이지가 포커스를 잃지 않았으면 웹으로 열기
+        window.open(app.url, '_blank');
+        showToast(`${app.name} 앱이 없어 웹으로 열었습니다.`, 'success');
+      }
+    }, 1500);
+
+    showToast(`${app.emoji} ${app.name} 실행 중...`, 'success');
+  } else {
+    // 딥링크 없는 앱은 바로 새 탭으로
+    window.open(app.url, '_blank');
+    showToast(`${app.emoji} ${app.name} 웹으로 열었습니다.`, 'success');
+  }
+}
+
+// ═══════════════════════════════════════
+// 실행 탭 앱 리스트 렌더링
+// ═══════════════════════════════════════
+function renderRunAppList() {
+  document.getElementById('runAppList').innerHTML = APPS.map(app => `
+    <div class="app-select-item" id="runItem-${app.name}" onclick="selectRunApp('${app.name}')">
+      <div class="app-select-icon" style="background:${app.color}">${app.emoji}</div>
+      <div class="app-select-name">${app.name}</div>
+    </div>
+  `).join('');
+}
+
+function selectRunApp(appName) {
+  currentApp = APPS.find(a => a.name === appName);
+  if (!currentApp) return;
+  document.querySelectorAll('.app-select-item').forEach(el => el.classList.remove('selected'));
+  const item = document.getElementById('runItem-'+appName);
+  if (item) item.classList.add('selected');
+  document.getElementById('runUrl').textContent = currentApp.url;
+  document.getElementById('currentRunApp').textContent = currentApp.emoji + ' ' + currentApp.name;
+
+  const key      = currentApp.name.toLowerCase().replace(/[^a-z0-9]/g,'');
+  const hasDeep  = !!DEEP_LINKS[key];
+  const deepHint = hasDeep
+    ? `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,210,170,0.12);
+         border:1px solid rgba(0,210,170,0.3);border-radius:8px;padding:5px 12px;
+         font-size:0.73rem;color:var(--accent-3);margin-bottom:16px">
+         ✅ 실제 앱 실행 지원
+       </div>`
+    : `<div style="display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.04);
+         border:1px solid var(--border);border-radius:8px;padding:5px 12px;
+         font-size:0.73rem;color:var(--text-muted);margin-bottom:16px">
+         🌐 웹으로 실행
+       </div>`;
+
+  document.getElementById('runBody').innerHTML = `
+    <div class="iframe-placeholder">
+      <div class="iframe-placeholder-icon">${currentApp.emoji}</div>
+      <h3>${escapeHtml(currentApp.name)}</h3>
+      ${deepHint}
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button class="launch-btn" onclick="openAppNative(APPS.find(a=>a.name==='${escapeHtml(currentApp.name)}'))">
+          ${hasDeep ? '🚀 앱으로 열기' : '🌐 웹으로 열기'}
+        </button>
+        ${hasDeep ? `<button class="launch-btn" style="background:var(--bg-glass);border:1px solid var(--border);color:var(--text-primary)"
+          onclick="window.open('${currentApp.url}','_blank')">🌐 웹으로도 열기</button>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ═══════════════════════════════════════
+// 타이머
+// ═══════════════════════════════════════
+function startTimer() {
+  if (timerRunning) return;
+  if (!currentApp) { showToast('먼저 앱을 선택하세요!','error'); return; }
+  timerRunning = true;
+  sessionStartTime = new Date();
+  document.getElementById('btnStart').disabled = true;
+  document.getElementById('btnStop').disabled  = false;
+  timerInterval = setInterval(() => {
+    timerSeconds++;
+    document.getElementById('timerDisplay').textContent = formatTime(timerSeconds);
+  }, 1000);
+  showToast(`${currentApp.name} 타이머 시작!`, 'success');
+}
+
+function stopTimer() {
+  if (!timerRunning) return;
+  timerRunning = false;
+  clearInterval(timerInterval);
+  document.getElementById('btnStart').disabled = false;
+  document.getElementById('btnStop').disabled  = true;
+  const endTime = new Date();
+  const mode = document.querySelector('input[name="runMode"]:checked')?.value || '일반';
+
+  const sessionData = {
+    sessionId           : 'S'+Date.now(),
+    appName             : currentApp.name,
+    startTime           : sessionStartTime.toLocaleString('ko-KR'),
+    endTime             : endTime.toLocaleString('ko-KR'),
+    duration            : timerSeconds,
+    mode                : mode,
+    multiApp            : '-',
+    notificationAllowed : settings.notifications[currentApp.name] !== false
+  };
+  google.script.run.withSuccessHandler(r => {
+    showToast(r.success ? '✅ 세션 저장 완료!' : '저장 실패: '+r.message, r.success?'success':'error');
+    loadStats();
+  }).saveSession(sessionData);
+}
+
+function resetTimer() {
+  if (timerRunning) stopTimer();
+  timerSeconds = 0;
+  document.getElementById('timerDisplay').textContent = '00:00:00';
+  sessionStartTime = null;
+}
+
+function formatTime(s) {
+  const h = String(Math.floor(s/3600)).padStart(2,'0');
+  const m = String(Math.floor((s%3600)/60)).padStart(2,'0');
+  const sec = String(s%60).padStart(2,'0');
+  return `${h}:${m}:${sec}`;
+}
+
+// ═══════════════════════════════════════
+// 멀티창
+// ═══════════════════════════════════════
+function updateMultiPanel(side) {
+  const sel = document.getElementById('multi'+side[0].toUpperCase()+side.slice(1));
+  const body = document.getElementById('multi'+side[0].toUpperCase()+side.slice(1)+'Body');
+  const appName = sel.value;
+  if (!appName) {
+    body.innerHTML = '<div class="multi-empty"><div class="multi-empty-icon">⊞</div><p>앱을 선택하세요</p></div>';
+    return;
+  }
+  const app = APPS.find(a => a.name === appName);
+  body.innerHTML = `
+    <div class="focus-discord-center">
+      <div style="width:70px;height:70px;border-radius:20px;background:${app.color};
+        display:flex;align-items:center;justify-content:center;font-size:2rem;margin:0 auto 12px">
+        ${app.emoji}
+      </div>
+      <h3 style="font-family:var(--font-display);margin-bottom:6px">${app.name}</h3>
+      <button class="multi-launch" onclick="window.open('${app.url}','_blank')">새 탭으로 열기 ↗</button>
+    </div>
+  `;
+}
+
+function startMultiSession() {
+  const leftName  = document.getElementById('multiLeft').value;
+  const rightName = document.getElementById('multiRight').value;
+  if (!leftName || !rightName) { showToast('양쪽 창에 앱을 선택해주세요.','error'); return; }
+  if (leftName === rightName)  { showToast('서로 다른 앱을 선택하세요.','error'); return; }
+
+  const sd = {
+    sessionId           : 'M'+Date.now(),
+    appName             : leftName,
+    startTime           : new Date().toLocaleString('ko-KR'),
+    endTime             : new Date().toLocaleString('ko-KR'),
+    duration            : 0,
+    mode                : '멀티창',
+    multiApp            : rightName,
+    notificationAllowed : true
+  };
+  google.script.run.withSuccessHandler(r => {
+    showToast(r.success ? `✅ ${leftName} + ${rightName} 멀티 세션 시작!` : '저장 실패', r.success?'success':'error');
+    loadStats();
+  }).saveSession(sd);
+}
+
+// ═══════════════════════════════════════
+// 집중 모드
+// ═══════════════════════════════════════
+function toggleFocusMode() {
+  focusActive = !focusActive;
+  const overlay = document.getElementById('focusOverlay');
+  const btn = document.getElementById('focusToggleBtn');
+  if (focusActive) {
+    overlay.style.display = 'none';
+    btn.textContent = '해제';
+    btn.className = 'focus-toggle on';
+    showToast('🎯 집중 모드 활성화됨!','success');
+
+    const sd = {
+      sessionId:'F'+Date.now(), appName:'Discord',
+      startTime:new Date().toLocaleString('ko-KR'), endTime:new Date().toLocaleString('ko-KR'),
+      duration:0, mode:'집중모드', multiApp:'-', notificationAllowed:true
+    };
+    google.script.run.saveSession(sd);
+  } else {
+    overlay.style.display = 'flex';
+    btn.textContent = '활성화';
+    btn.className = 'focus-toggle off';
+    showToast('집중 모드 해제됨','success');
+  }
+}
+
+// 딥링크 지원 여부 힌트
+function checkDeepLink() {
+  const name = document.getElementById('fieldName').value.trim().toLowerCase().replace(/[^a-z0-9]/g,'');
+  const hint = document.getElementById('deepLinkHint');
+  if (!hint) return;
+  if (DEEP_LINKS[name]) {
+    hint.innerHTML = `<span style="color:var(--accent-3)">✅ 실제 앱 실행 지원 — 설치된 경우 앱으로 바로 열림</span>`;
+  } else {
+    hint.innerHTML = `<span style="color:var(--text-muted)">🌐 웹 브라우저로 열립니다 (앱 이름을 영문으로 입력하면 자동 감지)</span>`;
+  }
+}
+
+// ═══════════════════════════════════════
+// 다국어 (i18n)
+// ═══════════════════════════════════════
+const I18N = {
+  ko: {
+    home:'홈', run:'실행', multi:'멀티창', focus:'집중', widget:'위젯',
+    folder:'폴더', notif:'알림', stats:'통계', theme:'테마', manage:'앱관리',
+    widgetTitle:'위젯', clock:'시계', weather:'날씨', locating:'위치 확인 중...',
+    pushTitle:'푸시 알림', pushDesc:'앱 사용 리마인더를 받아보세요', enable:'활성화',
+    newFolder:'새 폴더', noFolder:'폴더가 없습니다', folderDesc:'앱을 묶어서 관리하세요',
+    folderName:'폴더 이름', selectApps:'앱 선택', cancel:'취소', save:'저장',
+    account:'계정', loginGoogle:'Google 계정으로 로그인',
+    loginDesc:'로그인하면 설정이 기기간 동기화됩니다 (시뮬레이션)',
+    logout:'로그아웃',
+  },
+  en: {
+    home:'Home', run:'Run', multi:'Multi', focus:'Focus', widget:'Widget',
+    folder:'Folder', notif:'Notify', stats:'Stats', theme:'Theme', manage:'Manage',
+    widgetTitle:'Widgets', clock:'Clock', weather:'Weather', locating:'Locating...',
+    pushTitle:'Push Notifications', pushDesc:'Get reminders for your apps', enable:'Enable',
+    newFolder:'New Folder', noFolder:'No folders yet', folderDesc:'Group your apps',
+    folderName:'Folder Name', selectApps:'Select Apps', cancel:'Cancel', save:'Save',
+    account:'Account', loginGoogle:'Sign in with Google',
+    loginDesc:'Sync settings across devices (simulation)', logout:'Logout',
+  },
+  ja: {
+    home:'ホーム', run:'実行', multi:'マルチ', focus:'集中', widget:'ウィジェット',
+    folder:'フォルダ', notif:'通知', stats:'統計', theme:'テーマ', manage:'管理',
+    widgetTitle:'ウィジェット', clock:'時計', weather:'天気', locating:'位置確認中...',
+    pushTitle:'プッシュ通知', pushDesc:'リマインダーを受け取る', enable:'有効化',
+    newFolder:'新しいフォルダ', noFolder:'フォルダがありません', folderDesc:'アプリをグループ化',
+    folderName:'フォルダ名', selectApps:'アプリを選択', cancel:'キャンセル', save:'保存',
+    account:'アカウント', loginGoogle:'Googleでサインイン',
+    loginDesc:'設定をデバイス間で同期します（シミュレーション）', logout:'ログアウト',
+  }
+};
+let currentLang = localStorage.getItem('lang') || 'ko';
+
+function setLang(lang, btn) {
+  currentLang = lang;
+  localStorage.setItem('lang', lang);
+  document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  applyLang();
+}
+
+function applyLang() {
+  const t = I18N[currentLang] || I18N.ko;
+  document.querySelectorAll('.i18n[data-key]').forEach(el => {
+    const key = el.dataset.key;
+    if (t[key]) el.textContent = t[key];
+  });
+  // 탭 버튼 텍스트는 span.i18n 안에 있으므로 자동 적용
+}
+
+// ═══════════════════════════════════════
+// 로딩 스플래시
+// ═══════════════════════════════════════
+function hideSplash() {
+  setTimeout(() => {
+    const splash = document.getElementById('splash');
+    if (splash) splash.classList.add('hide');
+    setTimeout(() => { if (splash) splash.remove(); }, 700);
+  }, 2000);
+}
+
+// ═══════════════════════════════════════
+// 드래그앤드롭 정렬
+// ═══════════════════════════════════════
+let dragSrcIndex = null;
+
+function enableDrag() {
+  const cards = document.querySelectorAll('#homeAppGrid .app-card');
+  cards.forEach((card, i) => {
+    card.setAttribute('draggable', true);
+    card.addEventListener('dragstart', () => { dragSrcIndex = i; card.classList.add('dragging'); });
+    card.addEventListener('dragend',   () => card.classList.remove('dragging'));
+    card.addEventListener('dragover',  e => { e.preventDefault(); card.classList.add('drag-over'); });
+    card.addEventListener('dragleave', () => card.classList.remove('drag-over'));
+    card.addEventListener('drop', e => {
+      e.preventDefault(); card.classList.remove('drag-over');
+      if (dragSrcIndex === null || dragSrcIndex === i) return;
+      // APPS 배열 순서 변경
+      const moved = APPS.splice(dragSrcIndex, 1)[0];
+      APPS.splice(i, 0, moved);
+      dragSrcIndex = null;
+      refreshAllViews();
+      showToast('✅ 순서가 변경되었습니다.', 'success');
+    });
+  });
+}
+
+// ═══════════════════════════════════════
+// 시계 위젯
+// ═══════════════════════════════════════
+function startClock() {
+  function tick() {
+    const now = new Date();
+    const t = I18N[currentLang] || I18N.ko;
+    const days = { ko:['일','월','화','수','목','금','토'], en:['Sun','Mon','Tue','Wed','Thu','Fri','Sat'], ja:['日','月','火','水','木','金','土'] };
+    const day  = (days[currentLang] || days.ko)[now.getDay()];
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const ss = String(now.getSeconds()).padStart(2,'0');
+    const el = document.getElementById('widgetClock');
+    const de = document.getElementById('widgetDate');
+    if (el) el.textContent = `${hh}:${mm}:${ss}`;
+    if (de) de.textContent = `${now.getFullYear()}.${String(now.getMonth()+1).padStart(2,'0')}.${String(now.getDate()).padStart(2,'0')} (${day})`;
+  }
+  tick(); setInterval(tick, 1000);
+}
+
+// ═══════════════════════════════════════
+// 날씨 위젯
+// ═══════════════════════════════════════
+function loadWeather() {
+  if (!navigator.geolocation) { document.getElementById('weatherDesc').textContent = '위치 사용 불가'; return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude: lat, longitude: lon } = pos.coords;
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true`)
+      .then(r => r.json())
+      .then(d => {
+        const w    = d.current_weather;
+        const temp = Math.round(w.temperature);
+        const icons = { 0:'☀️', 1:'🌤', 2:'⛅', 3:'☁️', 45:'🌫', 48:'🌫', 51:'🌦', 61:'🌧', 71:'❄️', 80:'🌦', 95:'⛈' };
+        const wIcon = icons[w.weathercode] || '🌡';
+        document.getElementById('weatherIcon').textContent = wIcon;
+        document.getElementById('weatherTemp').textContent = `${temp}°`;
+        document.getElementById('weatherDesc').textContent = currentLang === 'en' ? `Wind ${w.windspeed}km/h` : `풍속 ${w.windspeed}km/h`;
+        // 역지오코딩으로 도시명
+        fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`)
+          .then(r => r.json())
+          .then(g => {
+            const city = g.address?.city || g.address?.town || g.address?.county || '';
+            const el = document.getElementById('weatherCity');
+            if (el) el.textContent = `📍 ${city}`;
+          }).catch(()=>{});
+      }).catch(() => { document.getElementById('weatherDesc').textContent = '날씨 불러오기 실패'; });
+  }, () => { document.getElementById('weatherDesc').textContent = '위치 권한 필요'; });
+}
+
+// ═══════════════════════════════════════
+// 푸시 알림
+// ═══════════════════════════════════════
+function requestPushPermission() {
+  if (!('Notification' in window)) {
+    showToast('이 브라우저는 알림을 지원하지 않습니다.', 'error'); return;
+  }
+  Notification.requestPermission().then(perm => {
+    const el = document.getElementById('pushStatus');
+    if (perm === 'granted') {
+      el.innerHTML = '✅ 푸시 알림이 활성화되었습니다!';
+      el.style.color = 'var(--accent-3)';
+      showToast('🔔 알림 활성화 완료!', 'success');
+      // 테스트 알림
+      setTimeout(() => {
+        new Notification('MY APPS 🚀', {
+          body: '알림이 정상적으로 작동합니다!',
+          icon: './icon-192.png'
+        });
+      }, 1000);
+    } else {
+      el.innerHTML = '❌ 알림 권한이 거부되었습니다.';
+      el.style.color = 'var(--accent-2)';
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+// 폴더
+// ═══════════════════════════════════════
+let folders = JSON.parse(localStorage.getItem('folders') || '[]');
+
+function openFolderModal() {
+  document.getElementById('folderNameInput').value = '';
+  document.getElementById('folderAppChecklist').innerHTML = APPS.map((app, i) => `
+    <label class="folder-app-check">
+      <input type="checkbox" value="${i}"/>
+      <div style="width:30px;height:30px;border-radius:8px;background:${app.color};
+        display:flex;align-items:center;justify-content:center;font-size:0.9rem">${app.emoji}</div>
+      <span style="font-size:0.85rem">${escapeHtml(app.name)}</span>
+    </label>
+  `).join('');
+  document.getElementById('folderModal').classList.add('open');
+}
+
+function closeFolderModal() {
+  document.getElementById('folderModal').classList.remove('open');
+}
+
+function saveFolder() {
+  const name = document.getElementById('folderNameInput').value.trim();
+  if (!name) { showToast('폴더 이름을 입력해주세요.', 'error'); return; }
+  const checked = [...document.querySelectorAll('#folderAppChecklist input:checked')].map(cb => parseInt(cb.value));
+  if (!checked.length) { showToast('앱을 1개 이상 선택하세요.', 'error'); return; }
+  folders.push({ id: Date.now(), name, appIndices: checked });
+  localStorage.setItem('folders', JSON.stringify(folders));
+  closeFolderModal();
+  renderFolderGrid();
+  showToast(`📂 "${name}" 폴더가 생성되었습니다!`, 'success');
+}
+
+function deleteFolder(id) {
+  folders = folders.filter(f => f.id !== id);
+  localStorage.setItem('folders', JSON.stringify(folders));
+  renderFolderGrid();
+  showToast('폴더가 삭제되었습니다.', 'success');
+}
+
+function renderFolderGrid() {
+  const grid = document.getElementById('folderGrid');
+  if (!folders.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📂</div><p class="i18n" data-key="noFolder">폴더가 없습니다</p></div>`;
+    applyLang(); return;
+  }
+  grid.innerHTML = folders.map(f => {
+    const apps = f.appIndices.map(i => APPS[i]).filter(Boolean);
+    const miniIcons = apps.slice(0,4).map(a =>
+      `<div class="folder-icon-mini" style="background:${a.color}">${a.emoji}</div>`).join('');
+    return `
+      <div class="folder-card" onclick="openFolderView(${f.id})">
+        <div class="folder-icon-grid">${miniIcons}</div>
+        <div class="folder-name">${escapeHtml(f.name)}</div>
+        <div class="folder-count">${apps.length}개 앱</div>
+        <button onclick="event.stopPropagation();deleteFolder(${f.id})"
+          style="position:absolute;top:8px;right:8px;background:none;border:none;
+          color:var(--text-muted);cursor:pointer;font-size:0.8rem">✕</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function openFolderView(id) {
+  const folder = folders.find(f => f.id === id);
+  if (!folder) return;
+  const apps = folder.appIndices.map(i => APPS[i]).filter(Boolean);
+  showToast(`📂 ${folder.name}: ${apps.map(a=>a.name).join(', ')}`, 'success');
+}
+
+// ═══════════════════════════════════════
+// 구글 로그인 (시뮬레이션)
+// ═══════════════════════════════════════
+let currentUser = JSON.parse(localStorage.getItem('currentUser') || 'null');
+
+function googleLogin() {
+  // 실제 OAuth 대신 데모 시뮬레이션
+  const demoUser = { name: '내 계정', email: 'user@gmail.com', avatar: '👤' };
+  currentUser = demoUser;
+  localStorage.setItem('currentUser', JSON.stringify(demoUser));
+  applyUserUI();
+  showToast('✅ Google 로그인 완료!', 'success');
+}
+
+function googleLogout() {
+  currentUser = null;
+  localStorage.removeItem('currentUser');
+  applyUserUI();
+  showToast('로그아웃 되었습니다.', 'success');
+}
+
+function applyUserUI() {
+  const loginSec = document.getElementById('loginSection');
+  const userSec  = document.getElementById('userSection');
+  const profileDefault = document.getElementById('profileDefault');
+  if (currentUser) {
+    loginSec.style.display = 'none';
+    userSec.style.display  = 'block';
+    document.getElementById('userName').textContent  = currentUser.name;
+    document.getElementById('userEmail').textContent = currentUser.email;
+    // 네비 프로필도 업데이트
+    if (profileDefault) profileDefault.textContent = currentUser.avatar;
+  } else {
+    loginSec.style.display = 'block';
+    userSec.style.display  = 'none';
+    if (profileDefault) profileDefault.textContent = '👤';
+  }
+}
+
+
+const DEFAULT_APP_NAMES = []; // 기본 앱 없음 — 모두 사용자가 추가
+
+const EMOJI_POOL = [
+  '💬','📱','🌐','🎮','📧','📞','🎵','📺','🛒','💼',
+  '📝','🎨','🔗','🧩','🚀','⚡','🌟','🔔','💡','🎯',
+  '🤝','🌍','📡','🎤','🖥','🧠','🎲','🏆','💎','🔥',
+  '🦄','🐦','🌈','🍀','⭐','🔮','🎸','🎬','📰','🔑',
+];
+
+const GRADIENT_POOL = [
+  'linear-gradient(135deg,#6C63FF,#3c4a9e)',
+  'linear-gradient(135deg,#FF6B9D,#c0392b)',
+  'linear-gradient(135deg,#00D2AA,#007a5e)',
+  'linear-gradient(135deg,#FF8C42,#c0540a)',
+  'linear-gradient(135deg,#A78BFA,#6d28d9)',
+  'linear-gradient(135deg,#F59E0B,#92400e)',
+  'linear-gradient(135deg,#10B981,#065f46)',
+  'linear-gradient(135deg,#3B82F6,#1e3a8a)',
+  'linear-gradient(135deg,#EC4899,#831843)',
+  'linear-gradient(135deg,#14B8A6,#134e4a)',
+  'linear-gradient(135deg,#8B5CF6,#4c1d95)',
+  'linear-gradient(135deg,#F97316,#7c2d12)',
+];
+
+let modalEditIndex = null;  // null = 신규, number = 편집 대상 인덱스(APPS 기준)
+let pickedEmoji    = '🌐';
+let pickedGradient = GRADIENT_POOL[0];
+
+// ═══════════════════════════════════════
+// 앱 관리 탭 렌더링
+// ═══════════════════════════════════════
+function renderManageList() {
+  const list = document.getElementById('manageAppList');
+  list.innerHTML = APPS.map((app, i) => {
+    const isDefault = DEFAULT_APP_NAMES.includes(app.name);
+    return `
+      <div class="manage-app-item" id="manageItem-${i}">
+        <div class="manage-app-item-icon" style="background:${app.color}">${app.emoji}</div>
+        <div class="manage-app-item-info">
+          <div class="manage-app-item-name">${escapeHtml(app.name)}</div>
+          <div class="manage-app-item-url">${escapeHtml(app.url)}</div>
+        </div>
+        ${isDefault ? '<span class="manage-app-item-badge">기본</span>' : ''}
+        <div class="manage-app-actions">
+          <button class="manage-btn" onclick="openEditModal(${i})">✏ 편집</button>
+          ${isDefault
+            ? `<button class="manage-btn del" disabled style="opacity:0.3;cursor:not-allowed">삭제</button>`
+            : `<button class="manage-btn del" onclick="deleteApp(${i})">🗑 삭제</button>`}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// 모달 열기/닫기
+// ═══════════════════════════════════════
+function openAddModal() {
+  modalEditIndex = null;
+  pickedEmoji    = '🌐';
+  pickedGradient = GRADIENT_POOL[0];
+  document.getElementById('modalTitle').textContent    = '새 앱 추가';
+  document.getElementById('modalSubtitle').textContent = '자주 쓰는 소통 앱을 런처에 등록하세요.';
+  document.getElementById('fieldName').value = '';
+  document.getElementById('fieldUrl').value  = '';
+  renderEmojiGrid();
+  renderGradientGrid();
+  updatePreview();
+  document.getElementById('appModal').classList.add('open');
+}
+
+function openEditModal(index) {
+  const app = APPS[index];
+  modalEditIndex = index;
+  pickedEmoji    = app.emoji;
+  pickedGradient = app.color;
+  document.getElementById('modalTitle').textContent    = '앱 편집';
+  document.getElementById('modalSubtitle').textContent = `${app.name} 정보를 수정합니다.`;
+  document.getElementById('fieldName').value = app.name;
+  document.getElementById('fieldUrl').value  = app.url;
+  renderEmojiGrid();
+  renderGradientGrid();
+  updatePreview();
+  document.getElementById('appModal').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('appModal').classList.remove('open');
+}
+
+// 모달 바깥 클릭 시 닫기
+document.addEventListener('click', e => {
+  const backdrop = document.getElementById('appModal');
+  if (e.target === backdrop) closeModal();
+});
+
+// ═══════════════════════════════════════
+// 이모지 / 그라디언트 그리드 렌더링
+// ═══════════════════════════════════════
+function renderEmojiGrid() {
+  document.getElementById('emojiGrid').innerHTML = EMOJI_POOL.map(em => `
+    <div class="emoji-pick ${em === pickedEmoji ? 'selected' : ''}"
+         onclick="pickEmoji('${em}', this)">${em}</div>
+  `).join('');
+}
+
+function renderGradientGrid() {
+  document.getElementById('gradientGrid').innerHTML = GRADIENT_POOL.map(g => `
+    <div class="gradient-pick ${g === pickedGradient ? 'selected' : ''}"
+         style="background:${g}"
+         onclick="pickGradient('${g}', this)"></div>
+  `).join('');
+}
+
+function pickEmoji(em, el) {
+  pickedEmoji = em;
+  document.querySelectorAll('.emoji-pick').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  updatePreview();
+}
+
+function pickGradient(g, el) {
+  pickedGradient = g;
+  document.querySelectorAll('.gradient-pick').forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  updatePreview();
+}
+
+// ═══════════════════════════════════════
+// 미리보기 업데이트
+// ═══════════════════════════════════════
+function updatePreview() {
+  const name = document.getElementById('fieldName').value.trim() || '앱 이름';
+  const url  = document.getElementById('fieldUrl').value.trim()  || 'https://example.com';
+  document.getElementById('previewIcon').style.background = pickedGradient;
+  document.getElementById('previewIcon').textContent      = pickedEmoji;
+  document.getElementById('previewName').textContent      = name;
+  document.getElementById('previewUrl').textContent       = url;
+}
+
+// ═══════════════════════════════════════
+// 앱 저장 (추가 or 편집)
+// ═══════════════════════════════════════
+function saveApp() {
+  const name = document.getElementById('fieldName').value.trim();
+  const url  = document.getElementById('fieldUrl').value.trim();
+
+  if (!name) { showToast('앱 이름을 입력해주세요.', 'error'); return; }
+  if (!url)  { showToast('URL을 입력해주세요.', 'error'); return; }
+
+  // URL 간단 검증
+  try { new URL(url.startsWith('http') ? url : 'https://'+url); }
+  catch { showToast('올바른 URL을 입력해주세요. (예: https://slack.com)', 'error'); return; }
+
+  const finalUrl = url.startsWith('http') ? url : 'https://'+url;
+  // cls 는 소문자 이름 기반으로 생성 (통계 차트 색상용)
+  const cls = name.toLowerCase().replace(/[^a-z0-9]/g,'');
+
+  if (modalEditIndex !== null) {
+    // 편집 모드
+    APPS[modalEditIndex] = {
+      ...APPS[modalEditIndex],
+      name : name,
+      emoji: pickedEmoji,
+      color: pickedGradient,
+      url  : finalUrl,
+      cls  : cls,
+    };
+    showToast(`✅ ${name} 앱이 수정되었습니다.`, 'success');
+  } else {
+    // 추가 모드 - 중복 이름 체크
+    if (APPS.some(a => a.name.toLowerCase() === name.toLowerCase())) {
+      showToast('같은 이름의 앱이 이미 있습니다.', 'error'); return;
+    }
+    APPS.push({ name, emoji: pickedEmoji, color: pickedGradient, url: finalUrl, cls });
+    showToast(`✅ ${name} 앱이 추가되었습니다!`, 'success');
+  }
+
+  closeModal();
+  refreshAllViews();
+}
+
+// ═══════════════════════════════════════
+// 앱 삭제
+// ═══════════════════════════════════════
+function deleteApp(index) {
+  const app = APPS[index];
+  if (DEFAULT_APP_NAMES.includes(app.name)) {
+    showToast('기본 앱은 삭제할 수 없습니다.', 'error'); return;
+  }
+  if (!confirm(`"${app.name}" 앱을 삭제하시겠습니까?`)) return;
+  APPS.splice(index, 1);
+  showToast(`🗑 ${app.name} 삭제 완료`, 'success');
+  refreshAllViews();
+}
+
+// ═══════════════════════════════════════
+// 앱 변경 후 전체 뷰 갱신
+// ═══════════════════════════════════════
+function refreshAllViews() {
+  renderHub();
+  renderHomeGrid();
+  renderRunAppList();
+  renderNotifList();
+  renderManageList();
+  updateMultiSelects();
+  setTimeout(enableDrag, 200);
+}
+
+// 멀티창 셀렉트 옵션 동기화
+function updateMultiSelects() {
+  ['multiLeft','multiRight'].forEach(id => {
+    const sel = document.getElementById(id);
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">앱 선택...</option>' +
+      APPS.map(a => `<option ${a.name===cur?'selected':''}>${escapeHtml(a.name)}</option>`).join('');
+  });
+}
+
+
+function renderNotifList() {
+  document.getElementById('notifList').innerHTML = APPS.map(app => {
+    const checked = settings.notifications[app.name] !== false ? 'checked' : '';
+    return `
+      <div class="notif-item">
+        <div class="notif-icon" style="background:${app.color}">${app.emoji}</div>
+        <div class="notif-info">
+          <div class="notif-name">${app.name}</div>
+          <div class="notif-status" id="notifStatus-${app.name}">${checked ? '알림 허용됨' : '알림 차단됨'}</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" ${checked} onchange="toggleNotif('${app.name}',this.checked)"/>
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    `;
+  }).join('');
+}
+
+function toggleNotif(appName, allowed) {
+  settings.notifications[appName] = allowed;
+  const el = document.getElementById('notifStatus-'+appName);
+  if (el) el.textContent = allowed ? '알림 허용됨' : '알림 차단됨';
+  showToast(`${appName} 알림 ${allowed ? '허용' : '차단'}됨`, 'success');
+}
+
+// ═══════════════════════════════════════
+// 통계 로드
+// ═══════════════════════════════════════
+function loadStats() {
+  google.script.run.withSuccessHandler(result => {
+    if (!result.success) return;
+    statsData = result;
+    renderStats();
+    updateHomeUsage();
+  }).getStats();
+}
+
+function renderStats() {
+  const { data, sessions } = statsData;
+  const totalSessions = sessions.length;
+  const totalMins = data.reduce((s,d) => s+d.totalMinutes, 0);
+  const topApp = data.length ? data[0].appName : '-';
+  const today  = new Date().toLocaleDateString('ko-KR');
+  const todaySessions = sessions.filter(s => s.startTime && s.startTime.includes(today)).length;
+
+  // 요약 카드
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card"><div class="stat-card-num">${totalSessions}</div><div class="stat-card-label">총 세션</div></div>
+    <div class="stat-card"><div class="stat-card-num">${totalMins}</div><div class="stat-card-label">총 사용 시간(분)</div></div>
+    <div class="stat-card"><div class="stat-card-num" style="font-size:1.2rem">${topApp}</div><div class="stat-card-label">최다 사용 앱</div></div>
+    <div class="stat-card"><div class="stat-card-num">${todaySessions}</div><div class="stat-card-label">오늘 세션</div></div>
+  `;
+
+  // 바 차트
+  if (!data.length) {
+    document.getElementById('barChart').innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><p>아직 데이터가 없습니다</p></div>';
+  } else {
+    const max = Math.max(...data.map(d => d.totalSeconds), 1);
+    document.getElementById('barChart').innerHTML = data.map(d => {
+      const app = APPS.find(a => a.name === d.appName);
+      const pct = (d.totalSeconds/max*100).toFixed(1);
+      return `
+        <div class="chart-bar-row">
+          <div class="chart-bar-label">${app ? app.emoji : ''} ${d.appName}</div>
+          <div class="chart-bar-wrap">
+            <div class="chart-bar-fill ${app ? app.cls : ''}" style="width:${pct}%">
+              ${d.totalMinutes}분
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // 세션 테이블
+  if (!sessions.length) {
+    document.getElementById('sessionTbody').innerHTML =
+      '<tr><td colspan="5" style="text-align:center;color:var(--text-muted);padding:30px">기록 없음</td></tr>';
+  } else {
+    document.getElementById('sessionTbody').innerHTML = sessions.map(s => {
+      const app = APPS.find(a => a.name === s.appName);
+      const mins = Math.round(s.duration/60);
+      return `
+        <tr>
+          <td>${app ? app.emoji : ''} ${s.appName}</td>
+          <td style="font-size:0.75rem;color:var(--text-muted)">${s.startTime||'-'}</td>
+          <td>${mins}분 ${s.duration%60}초</td>
+          <td><span class="mode-pill ${s.mode||'일반'}">${s.mode||'일반'}</span></td>
+          <td style="font-size:0.75rem">${s.notification === 'TRUE' ? '✅' : '🔕'}</td>
+        </tr>
+      `;
+    }).join('');
+  }
+}
+
+function clearStats() {
+  if (!confirm('정말로 모든 기록을 삭제하시겠습니까?')) return;
+  google.script.run.withSuccessHandler(r => {
+    showToast(r.success ? '✅ 기록 초기화 완료' : '삭제 실패','success');
+    statsData = {data:[],sessions:[]};
+    renderStats();
+    updateHomeUsage();
+  }).clearAllSessions();
+}
+
+// ═══════════════════════════════════════
+// AI 추천
+// ═══════════════════════════════════════
+function getAITip() {
+  const aiContent = document.getElementById('aiContent');
+  aiContent.innerHTML = `<div class="ai-loading"><div class="ai-dots">
+    <div class="ai-dot"></div><div class="ai-dot"></div><div class="ai-dot"></div>
+  </div> Gemini가 분석 중...</div>`;
+
+  const statsJson = JSON.stringify(statsData.data.slice(0,10));
+  google.script.run.withSuccessHandler(r => {
+    if (r.success) {
+      aiContent.innerHTML = `<div class="ai-text">${escapeHtml(r.text)}</div>`;
+    } else {
+      aiContent.innerHTML = `<div style="color:var(--accent-2);font-size:0.83rem">AI 분석 실패: ${r.message}</div>`;
+    }
+  }).getAIRecommendation(statsJson);
+}
+
+// ═══════════════════════════════════════
+// 테마 설정
+// ═══════════════════════════════════════
+function renderColorPalette() {
+  document.getElementById('colorPalette').innerHTML = COLORS.map((c, i) => `
+    <div class="color-swatch ${c === settings.accentColor ? 'active' : ''}"
+         style="background:${c}"
+         title="${COLORS_NAMES[i]}"
+         onclick="applyAccentColor('${c}', this)"></div>
+  `).join('');
+}
+
+function renderIconSkinGrid() {
+  document.getElementById('iconSkinGrid').innerHTML = ICON_SKINS.map((s, i) => `
+    <div class="icon-skin ${settings.skinIndex === i ? 'active' : ''}" onclick="selectSkin(${i}, this)">
+      <div class="icon-skin-preview">${s.icons[0]}</div>
+      <div>${s.name}</div>
+    </div>
+  `).join('');
+}
+
+function applyAccentColor(color, el) {
+  settings.accentColor = color;
+  document.documentElement.style.setProperty('--accent', color);
+  document.querySelectorAll('.color-swatch').forEach(sw => sw.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function selectSkin(i, el) {
+  settings.skinIndex = i;
+  document.querySelectorAll('.icon-skin').forEach(sk => sk.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function applyTheme() {
+  const isDark = document.getElementById('themeCb').checked;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  settings.theme = isDark ? 'dark' : 'light';
+  document.getElementById('themeToggleNav').textContent = isDark ? '🌙 다크' : '☀ 라이트';
+}
+
+function quickToggleTheme() {
+  const cb = document.getElementById('themeCb');
+  cb.checked = !cb.checked;
+  applyTheme();
+}
+
+function saveThemeSettings() {
+  google.script.run.withSuccessHandler(r => {
+    showToast(r.success ? '✅ 설정 저장 완료!' : '저장 실패','success');
+  }).saveSettings(settings);
+}
+
+function loadSettings() {
+  google.script.run.withSuccessHandler(r => {
+    if (!r.success) return;
+    settings = r.settings;
+    document.documentElement.style.setProperty('--accent', settings.accentColor || '#6C63FF');
+    const isDark = settings.theme !== 'light';
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+    document.getElementById('themeCb').checked = isDark;
+    document.getElementById('themeToggleNav').textContent = isDark ? '🌙 다크' : '☀ 라이트';
+    renderNotifList();
+    renderColorPalette();
+    renderIconSkinGrid();
+  }).getSettings();
+}
+
+// ═══════════════════════════════════════
+// PWA 앱 아이콘 변경
+// ═══════════════════════════════════════
+function uploadPwaIcon(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    // Canvas로 512×512 정사각형으로 리사이즈
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      // 둥근 모서리 클리핑
+      ctx.beginPath();
+      ctx.roundRect(0, 0, 512, 512, 112);
+      ctx.clip();
+      // 이미지를 정사각형에 꽉 채우기 (cover)
+      const size = Math.min(img.width, img.height);
+      const sx   = (img.width  - size) / 2;
+      const sy   = (img.height - size) / 2;
+      ctx.drawImage(img, sx, sy, size, size, 0, 0, 512, 512);
+      const dataUrl = canvas.toDataURL('image/png');
+      localStorage.setItem('pwa_icon', dataUrl);
+      applyPwaIconPreview(dataUrl);
+      buildAndInjectManifest(); // manifest 갱신
+      const hint = document.getElementById('pwaIconHint');
+      hint.innerHTML = `✅ 아이콘이 저장됐습니다. Chrome에서 <b>재설치</b>하면 반영됩니다.`;
+      hint.style.color = 'var(--accent-3)';
+      showToast('✅ 앱 아이콘이 변경되었습니다!', 'success');
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function resetPwaIcon() {
+  localStorage.removeItem('pwa_icon');
+  applyPwaIconPreview(null);
+  buildAndInjectManifest();
+  const hint = document.getElementById('pwaIconHint');
+  hint.innerHTML = `💡 권장: 정사각형 이미지 (512×512px 이상), PNG/JPG`;
+  hint.style.color = 'var(--text-muted)';
+  showToast('기본 아이콘으로 초기화했습니다.', 'success');
+}
+
+function applyPwaIconPreview(dataUrl) {
+  const preview = document.getElementById('pwaIconPreview');
+  if (!preview) return;
+  if (dataUrl) {
+    preview.style.background = 'none';
+    preview.innerHTML = `<img src="${dataUrl}" style="width:100%;height:100%;object-fit:cover;border-radius:16px"/>`;
+  } else {
+    preview.style.background = 'linear-gradient(135deg,#6C63FF,#FF6B9D)';
+    preview.innerHTML = '◈';
+  }
+}
+
+function loadPwaIconPreview() {
+  const saved = localStorage.getItem('pwa_icon');
+  if (saved) applyPwaIconPreview(saved);
+}
+
+// ═══════════════════════════════════════
+// 프로필 사진
+// ═══════════════════════════════════════
+function uploadProfile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const dataUrl = e.target.result;
+    localStorage.setItem('profileImg', dataUrl);
+    applyProfileImg(dataUrl);
+    showToast('✅ 프로필 사진이 저장되었습니다!', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyProfileImg(dataUrl) {
+  const img = document.getElementById('profileImg');
+  const def = document.getElementById('profileDefault');
+  if (dataUrl) {
+    img.src = dataUrl;
+    img.style.display = 'block';
+    def.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    def.style.display = 'flex';
+  }
+}
+
+function loadProfileImg() {
+  const saved = localStorage.getItem('profileImg');
+  if (saved) applyProfileImg(saved);
+}
+
+// ═══════════════════════════════════════
+// 유틸
+// ═══════════════════════════════════════
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  const icon = type === 'success' ? '✅' : '⚠️';
+  t.innerHTML = `<span>${icon}</span> ${escapeHtml(msg)}`;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
