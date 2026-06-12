@@ -782,8 +782,60 @@ body {
 .empty-state-icon { font-size: 3rem; margin-bottom: 12px; }
 .empty-state p { font-size: 0.88rem; }
 
-/* 로딩 스피너 */
-.spinner {
+/* 인라인 폼 */
+.inline-form {
+  background: var(--bg-secondary); border: 1px solid var(--border);
+  border-radius: var(--radius-md); padding: 18px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.inline-form-field label {
+  display: block; font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 1px;
+  color: var(--text-muted); margin-bottom: 5px;
+}
+.inline-form-field input {
+  width: 100%; background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: var(--radius-sm);
+  color: var(--text-primary); padding: 9px 13px;
+  font-family: var(--font-body); font-size: 0.86rem; outline: none;
+  transition: border-color var(--transition);
+}
+.inline-form-field input:focus { border-color: var(--accent); }
+.inline-form-field input.error { border-color: var(--accent-2); }
+.inline-form-error {
+  font-size: 0.72rem; color: var(--accent-2);
+  margin-top: 4px; display: none;
+}
+.inline-form-error.show { display: block; }
+
+/* 인라인 확인 오버레이 */
+.confirm-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+  animation: fadeIn 0.15s ease;
+}
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.confirm-box {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 28px 24px;
+  max-width: 320px; width: 100%; text-align: center;
+  animation: popIn 0.2s cubic-bezier(0.34,1.56,0.64,1);
+}
+@keyframes popIn { from{transform:scale(.85);opacity:0} to{transform:scale(1);opacity:1} }
+.confirm-icon { font-size: 2rem; margin-bottom: 12px; }
+.confirm-title {
+  font-family: var(--font-display); font-size: 1rem; font-weight: 700;
+  margin-bottom: 6px;
+}
+.confirm-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.5; }
+.confirm-btns { display: flex; gap: 8px; }
+.confirm-btns button { flex: 1; padding: 10px; border-radius: var(--radius-sm); cursor: pointer; font-family: var(--font-body); font-size: 0.85rem; font-weight: 600; transition: all var(--transition); }
+.confirm-cancel { background: var(--bg-glass); border: 1px solid var(--border); color: var(--text-muted); }
+.confirm-cancel:hover { border-color: var(--accent); color: var(--text-primary); }
+.confirm-ok { border: none; background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
+.confirm-ok:hover { opacity: 0.85; }
+.confirm-ok.danger { background: linear-gradient(135deg, #ff5e72, #c0392b); }
   display: inline-block; width: 20px; height: 20px;
   border: 2px solid var(--border); border-top-color: var(--accent);
   border-radius: 50%; animation: spin 0.7s linear infinite;
@@ -1451,16 +1503,29 @@ body {
       <div class="icon-skin-grid" id="iconSkinGrid"></div>
     </div>
 
-    <!-- 구글 로그인 -->
+    <!-- 계정 -->
     <div class="settings-section">
       <div class="settings-section-title">👤 <span class="i18n" data-key="account">계정</span></div>
       <div id="loginSection">
-        <button class="google-login-btn" onclick="googleLogin()">
-          <span class="google-icon">👤</span>
-          <span class="i18n" data-key="loginGoogle">이름 / 이메일 설정</span>
-        </button>
-        <div style="font-size:0.75rem;color:var(--text-muted);margin-top:8px" class="i18n" data-key="loginDesc">
-          내 이름과 이메일을 등록하면 프로필에 표시됩니다
+        <div class="inline-form">
+          <div class="inline-form-field">
+            <label>이름</label>
+            <input type="text" id="loginName" placeholder="홍길동" maxlength="20"
+              onkeydown="if(event.key==='Enter')document.getElementById('loginEmailInput').focus()"/>
+          </div>
+          <div class="inline-form-field">
+            <label>이메일</label>
+            <input type="email" id="loginEmailInput" placeholder="example@gmail.com"
+              onblur="validateLoginEmail()"
+              oninput="clearLoginEmailErr()"
+              onkeydown="if(event.key==='Enter')saveLogin()"/>
+            <div class="inline-form-error" id="loginEmailErr">
+              ⚠ 올바른 이메일 형식을 입력해주세요 (예: user@gmail.com)
+            </div>
+          </div>
+          <button class="btn-primary" onclick="saveLogin()" style="width:100%;padding:10px">
+            저장
+          </button>
         </div>
       </div>
       <div id="userSection" style="display:none">
@@ -2367,29 +2432,58 @@ function openFolderView(id) {
 }
 
 // ═══════════════════════════════════════
-// 구글 로그인 (시뮬레이션)
+// 계정 — 인라인 폼
 // ═══════════════════════════════════════
-let currentUser = null; // 자동 로그인 없음 — 항상 수동으로만
+let currentUser = null;
 
-function googleLogin() {
-  // 이름과 이메일을 직접 입력받는 방식
-  const name = prompt('표시할 이름을 입력하세요', '');
-  if (!name || !name.trim()) return;
-  const email = prompt('이메일을 입력하세요', '');
-  if (!email || !email.trim()) return;
-
-  currentUser = { name: name.trim(), email: email.trim(), avatar: name.trim()[0].toUpperCase() };
+function validateLoginEmail() {
+  const input = document.getElementById('loginEmailInput');
+  const err   = document.getElementById('loginEmailErr');
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if (input?.value && !regex.test(input.value.trim())) {
+    input.classList.add('error');
+    err?.classList.add('show');
+  } else {
+    input?.classList.remove('error');
+    err?.classList.remove('show');
+  }
+}
+function clearLoginEmailErr() {
+  document.getElementById('loginEmailInput')?.classList.remove('error');
+  document.getElementById('loginEmailErr')?.classList.remove('show');
+}
+function saveLogin() {
+  const name  = document.getElementById('loginName')?.value.trim();
+  const email = document.getElementById('loginEmailInput')?.value.trim();
+  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  if (!name)  { showToast('이름을 입력해주세요.', 'error'); return; }
+  if (!email) { showToast('이메일을 입력해주세요.', 'error'); return; }
+  if (!regex.test(email)) {
+    document.getElementById('loginEmailInput')?.classList.add('error');
+    document.getElementById('loginEmailErr')?.classList.add('show');
+    return;
+  }
+  currentUser = { name, email, avatar: name[0].toUpperCase() };
   localStorage.setItem('currentUser', JSON.stringify(currentUser));
   applyUserUI();
-  showToast('✅ 로그인 완료!', 'success');
+  showToast('✅ 등록 완료!', 'success');
 }
+function googleLogin() { saveLogin(); }
 
 function googleLogout() {
-  if (!confirm('로그아웃 하시겠습니까?')) return;
-  currentUser = null;
-  localStorage.removeItem('currentUser');
-  applyUserUI();
-  showToast('로그아웃 되었습니다.', 'success');
+  showConfirm({
+    icon: '👤',
+    title: '로그아웃',
+    desc: '정말 로그아웃 하시겠습니까?',
+    okText: '로그아웃',
+    danger: false,
+    onOk: () => {
+      currentUser = null;
+      localStorage.removeItem('currentUser');
+      applyUserUI();
+      showToast('로그아웃 되었습니다.', 'success');
+    }
+  });
 }
 
 function applyUserUI() {
@@ -2604,10 +2698,18 @@ function deleteApp(index) {
   if (DEFAULT_APP_NAMES.includes(app.name)) {
     showToast('기본 앱은 삭제할 수 없습니다.', 'error'); return;
   }
-  if (!confirm(`"${app.name}" 앱을 삭제하시겠습니까?`)) return;
-  APPS.splice(index, 1);
-  showToast(`🗑 ${app.name} 삭제 완료`, 'success');
-  refreshAllViews();
+  showConfirm({
+    icon: app.emoji,
+    title: `${app.name} 삭제`,
+    desc: '이 앱을 삭제하시겠습니까?\n삭제 후 복구할 수 없습니다.',
+    okText: '삭제',
+    danger: true,
+    onOk: () => {
+      APPS.splice(index, 1);
+      showToast(`🗑 ${app.name} 삭제 완료`, 'success');
+      refreshAllViews();
+    }
+  });
 }
 
 // ═══════════════════════════════════════
@@ -2731,13 +2833,21 @@ function renderStats() {
 }
 
 function clearStats() {
-  if (!confirm('정말로 모든 기록을 삭제하시겠습니까?')) return;
-  google.script.run.withSuccessHandler(r => {
-    showToast(r.success ? '✅ 기록 초기화 완료' : '삭제 실패','success');
-    statsData = {data:[],sessions:[]};
-    renderStats();
-    updateHomeUsage();
-  }).clearAllSessions();
+  showConfirm({
+    icon: '🗑',
+    title: '기록 초기화',
+    desc: '모든 사용 기록을 삭제합니다.\n이 작업은 되돌릴 수 없습니다.',
+    okText: '초기화',
+    danger: true,
+    onOk: () => {
+      google.script.run.withSuccessHandler(r => {
+        showToast(r.success ? '✅ 기록 초기화 완료' : '삭제 실패', 'success');
+        statsData = { data:[], sessions:[] };
+        renderStats();
+        updateHomeUsage();
+      }).clearAllSessions();
+    }
+  });
 }
 
 // ═══════════════════════════════════════
@@ -2923,6 +3033,28 @@ function applyProfileImg(dataUrl) {
 function loadProfileImg() {
   const saved = localStorage.getItem('profileImg');
   if (saved) applyProfileImg(saved);
+}
+
+// ═══════════════════════════════════════
+// 인라인 확인창 (confirm 대체)
+// ═══════════════════════════════════════
+function showConfirm({ icon, title, desc, okText='확인', danger=false, onOk }) {
+  const overlay = document.createElement('div');
+  overlay.className = 'confirm-overlay';
+  overlay.innerHTML = `
+    <div class="confirm-box">
+      <div class="confirm-icon">${icon}</div>
+      <div class="confirm-title">${escapeHtml(title)}</div>
+      <div class="confirm-desc">${escapeHtml(desc).replace(/\\n/g,'<br>')}</div>
+      <div class="confirm-btns">
+        <button class="confirm-cancel" id="cfCancel">취소</button>
+        <button class="confirm-ok ${danger?'danger':''}" id="cfOk">${escapeHtml(okText)}</button>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+  overlay.querySelector('#cfCancel').onclick = () => overlay.remove();
+  overlay.querySelector('#cfOk').onclick = () => { overlay.remove(); onOk(); };
+  overlay.onclick = (e) => { if(e.target === overlay) overlay.remove(); };
 }
 
 // ═══════════════════════════════════════
