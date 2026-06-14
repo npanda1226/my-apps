@@ -1783,7 +1783,8 @@ body {
 // 앱 데이터
 // ═══════════════════════════════════════
 // 처음엔 빈 배열 — 사용자가 직접 추가해서 키움
-let APPS = [];
+let APPS = JSON.parse(localStorage.getItem('myapps_apps') || 'null') || [];
+function saveApps() { localStorage.setItem('myapps_apps', JSON.stringify(APPS)); }
 
 // 앱별 딥링크(프로토콜) 매핑 — 실제 설치된 앱을 우선 실행
 // 딥링크 실패 시 웹 URL로 자동 폴백
@@ -2765,6 +2766,7 @@ function deleteApp(index) {
 // 앱 변경 후 전체 뷰 갱신
 // ═══════════════════════════════════════
 function refreshAllViews() {
+  saveApps();
   renderHub();
   renderHomeGrid();
   renderRunAppList();
